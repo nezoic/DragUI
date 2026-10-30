@@ -1,3 +1,9 @@
+## 1.1.3
+- Fixed: reduced the risk of a crash reported when pressing Enter to name a new teleport. If it still crashes for you, please send your Player.log and BepInEx/LogOutput.log.
+- Fixed: the teleport name box no longer loses your text and focus when the teleport list finishes loading while you type.
+- Changed: pressing Enter in the teleport, familiar and loadout text boxes now acts a frame later, so the box has finished with the key first.
+- Changed: teleport names can't contain ~ * < or >. They read back from the server as a different name, which broke Go and remove.
+
 ## 1.1.2
 - Changed: the source code moved to https://github.com/nezoic/DragUI. No changes to the mod itself.
 

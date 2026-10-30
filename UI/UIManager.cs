@@ -89,6 +89,7 @@ internal static class UIManager
             PointerOverUI = false;
             TypingInUI = false;
             _drag = null;
+            UIFactory.ClearPendingSubmits();
             if (_root != null && _root.activeSelf) _root.SetActive(false);
             return;
         }
@@ -104,6 +105,7 @@ internal static class UIManager
         if (!_root.activeSelf) _root.SetActive(true);
 
         ApplyScale();
+        UIFactory.RunPendingSubmits();
         TypingInUI = IsTypingInOurField() || (_familiars?.Capturing ?? false) || (_teleports?.Capturing ?? false);
         HandleHotkeys();
         _familiars?.Update();
@@ -128,7 +130,8 @@ internal static class UIManager
             _loadoutsChanged = false;
             _loadouts?.Rebuild();
         }
-        if (_teleportsChanged)
+        // The rows hold the name boxes, so wait until the player isn't typing in one: a rebuild would destroy it.
+        if (_teleportsChanged && !IsTypingInOurField())
         {
             _teleportsChanged = false;
             _teleports?.RebuildList();

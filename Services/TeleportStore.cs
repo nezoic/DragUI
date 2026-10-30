@@ -82,6 +82,7 @@ internal static class TeleportStore
         if (name.Length == 0) { Status = "Type a name for the teleport first."; return false; }
         if (_personal.Contains(name, StringComparer.OrdinalIgnoreCase)) { Status = $"You already have a teleport called {name}."; return false; }
         if (!ChatCommandSender.TrySend($".stp stp {Quote(name)}")) return false;
+        Core.Log.LogInfo($"Setting teleport '{name}'.");
         Status = $"Setting {name} here...";
         return true;
     }
@@ -149,14 +150,16 @@ internal static class TeleportStore
             _listingSince = 0;
             if (_gotReply)
             {
+                // Every rebuild recreates the rows, so a listing that changes nothing shouldn't cause one.
+                bool changed = !Listed || !_personal.SequenceEqual(_readPersonal) || !_global.SequenceEqual(_readGlobal);
                 _personal.Clear();
                 _personal.AddRange(_readPersonal);
                 _global.Clear();
                 _global.AddRange(_readGlobal);
                 Listed = true;
+                if (changed) Changed?.Invoke();
             }
             else Status = "ScarletTeleports didn't answer .stp ltp.";
-            Changed?.Invoke();
         }
         if (_setAt > 0 && now >= _setAt)
         {
@@ -227,7 +230,9 @@ internal static class TeleportStore
 
     // VCF splits arguments on spaces, so a name with spaces goes in quotes (and can't contain quotes).
     static string Quote(string name) => name.Contains(' ') ? $"\"{name}\"" : name;
-    static string Clean(string name) => Regex.Replace((name ?? string.Empty).Replace("\"", string.Empty), @"\s+", " ").Trim();
+    // ScarletTeleports' replies treat ~ and * as formatting and we strip <tags> from them, so a name with
+    // those would read back as a different name than the server has.
+    static string Clean(string name) => Regex.Replace(Regex.Replace(name ?? string.Empty, "[\"<>~*]", string.Empty), @"\s+", " ").Trim();
 
     static bool EnsureLoaded()
     {

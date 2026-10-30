@@ -34,6 +34,7 @@ internal static class Theme
 internal static class UIFactory
 {
     static TMP_FontAsset _font;
+    static readonly Queue<Action> _submits = new();
 
     static TMP_FontAsset Font
     {
@@ -283,13 +284,25 @@ internal static class UIFactory
             try { if (!field.isFocused) field.ActivateInputField(); } catch { }
         }));
         field.onDeselect.AddListener((UnityEngine.Events.UnityAction<string>)(_ => outline.color = Theme.ButtonOutline));
-        field.onSubmit.AddListener((UnityEngine.Events.UnityAction<string>)(value =>
+        // TMP fires onSubmit from inside its own key handling and keeps using the field afterwards, so the
+        // callback (which clears and unfocuses the field, and sends commands) waits for the UI tick.
+        field.onSubmit.AddListener((UnityEngine.Events.UnityAction<string>)(value => _submits.Enqueue(() =>
         {
+            if (field == null) return;
             try { onSubmit?.Invoke(value); }
             catch (Exception ex) { Core.Log.LogError($"Text box '{name}' failed: {ex}"); }
-        }));
+        })));
         return field;
     }
+
+    /// <summary>Per frame: run the text box submits since the last tick.</summary>
+    public static void RunPendingSubmits()
+    {
+        while (_submits.Count > 0) _submits.Dequeue()();
+    }
+
+    /// <summary>Drop submits that can no longer run (left the game).</summary>
+    public static void ClearPendingSubmits() => _submits.Clear();
 
     public sealed class ScrollRef
     {
