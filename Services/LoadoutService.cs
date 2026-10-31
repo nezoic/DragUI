@@ -254,7 +254,7 @@ internal static class LoadoutService
         return spells;
     }
 
-    static int ItemGuid(EquipmentSlot slot) =>
+    public static int ItemGuid(EquipmentSlot slot) =>
         slot.SlotEntity.TryGetSyncedEntity(out var item) && item.Exists() && item.Has<PrefabGUID>() ? item.Read<PrefabGUID>().GuidHash : 0;
 
     // Equipped passives: ActivePassivesBuffer, on the character or else the user. Entries named like

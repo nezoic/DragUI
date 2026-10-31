@@ -55,6 +55,7 @@ internal static class Ticker
                 if (Settings.DpsEnabled) DamageMeter.Tick();
                 if (Settings.SheetEnabled) PerkshopStats.Tick();
                 if (Settings.LoadoutsEnabled) LoadoutService.Tick();
+                if (Settings.StatChoicesEnabled) StatChoices.TickAll();
                 if (Settings.FamiliarsEnabled) FamiliarCatalog.Tick();
             }
         }

@@ -38,6 +38,11 @@ internal static class ChatPatch
                         Core.EntityManager.DestroyEntity(entity); // List All's own command replies
                         continue;
                     }
+                    if (Settings.StatChoicesEnabled && StatChoices.OnServerMessageAll(chat.MessageType, text))
+                    {
+                        Core.EntityManager.DestroyEntity(entity); // replies to the stat windows' commands
+                        continue;
+                    }
                     ChatKillFeed.OnServerMessage(chat.MessageType, text, chat.TimeUTC);
                     if (Settings.FamiliarsEnabled) FamiliarService.OnServerMessage(chat.MessageType, text);
                     if (Settings.SheetEnabled || Settings.LoadoutsEnabled) BloodcraftStats.OnServerMessage(chat.MessageType, text);

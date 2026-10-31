@@ -1,3 +1,7 @@
+## 1.2.0
+- New: Weapon Stats and Blood Stats in the Character menu (Bloodcraft). See the 12 stats for the weapon type or blood you have now as a grid of buttons, with chosen stats lit and numbered, their current values, base caps and your level. Click a stat to choose it. The window follows when you swap weapon or change blood, and doesn't need Eclipse.
+- New: a Reset stats button in both windows (.wep rst / .bl rst). It asks first, because the server can charge items for a reset.
+
 ## 1.1.3
 - Fixed: reduced the risk of a crash reported when pressing Enter to name a new teleport. If it still crashes for you, please send your Player.log and BepInEx/LogOutput.log.
 - Fixed: the teleport name box no longer loses your text and focus when the teleport list finishes loading while you type.

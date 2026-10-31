@@ -31,6 +31,8 @@ internal static class UIManager
     static CharacterPanel _character;
     static CooldownPanel _cooldowns;
     static LoadoutPanel _loadouts;
+    static WeaponStatsPanel _weaponStats;
+    static BloodStatsPanel _bloodStats;
     static NoctveilPanel _noctveil;
     static TeleportPanel _teleports;
     static TeleportPopout _teleportPopout;
@@ -191,6 +193,13 @@ internal static class UIManager
             _loadouts = new LoadoutPanel(_root.transform);
             _windows.Add(_loadouts);
         }
+        if (Settings.StatChoicesEnabled)
+        {
+            _weaponStats = new WeaponStatsPanel(_root.transform);
+            _windows.Add(_weaponStats);
+            _bloodStats = new BloodStatsPanel(_root.transform);
+            _windows.Add(_bloodStats);
+        }
         if (Settings.DpsEnabled)
         {
             _dps = new DpsPanel(_root.transform);
@@ -223,6 +232,11 @@ internal static class UIManager
             character.Add(new() { Label = "CD Test", IsOpen = () => _cooldowns.Visible, Toggle = _cooldowns.Toggle });
         if (_loadouts != null)
             character.Add(new() { Label = "Loadouts", IsOpen = () => _loadouts.Visible, Toggle = _loadouts.Toggle });
+        if (_weaponStats != null)
+        {
+            character.Add(new() { Label = "Weapon Stats", Width = 104f, IsOpen = () => _weaponStats.Visible, Toggle = _weaponStats.Toggle });
+            character.Add(new() { Label = "Blood Stats", Width = 104f, IsOpen = () => _bloodStats.Visible, Toggle = _bloodStats.Toggle });
+        }
         if (character.Count > 0)
             entries.Add(new() { Label = "Character", Width = 96f, Children = character });
         if (_dps != null)
@@ -319,6 +333,8 @@ internal static class UIManager
         _character = null;
         _cooldowns = null;
         _loadouts = null;
+        _weaponStats = null;
+        _bloodStats = null;
         _noctveil = null;
         _teleports = null;
         _teleportPopout = null;

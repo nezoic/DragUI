@@ -31,6 +31,9 @@ internal static class Settings
     static ConfigEntry<bool> _cooldownTesterEnabled;
     static ConfigEntry<bool> _loadoutsEnabled;
     static ConfigEntry<float> _loadoutPanelX, _loadoutPanelY;
+    static ConfigEntry<bool> _statChoicesEnabled;
+    static ConfigEntry<float> _weaponStatsPanelX, _weaponStatsPanelY;
+    static ConfigEntry<float> _bloodStatsPanelX, _bloodStatsPanelY;
     static ConfigEntry<float> _noctveilPanelX, _noctveilPanelY;
     static ConfigEntry<float> _teleportPanelX, _teleportPanelY;
     static ConfigEntry<float> _teleportPopoutX, _teleportPopoutY;
@@ -66,6 +69,7 @@ internal static class Settings
     public static bool SheetEnabled => _sheetEnabled.Value;
     public static bool CooldownTesterEnabled => _cooldownTesterEnabled.Value;
     public static bool LoadoutsEnabled => _loadoutsEnabled.Value;
+    public static bool StatChoicesEnabled => _statChoicesEnabled.Value;
     public static float DpsFightTimeoutSeconds => Mathf.Clamp(_dpsFightTimeout.Value, 2f, 60f);
     public static bool HideXpMessages => _hideXpMessages.Value;
     public static float XpIdleMinutes => Mathf.Max(1f, _xpIdleMinutes.Value);
@@ -117,6 +121,18 @@ internal static class Settings
     {
         get => new(_loadoutPanelX.Value, _loadoutPanelY.Value);
         set { _loadoutPanelX.Value = Mathf.Round(value.x); _loadoutPanelY.Value = Mathf.Round(value.y); }
+    }
+
+    public static Vector2 WeaponStatsPanelPosition
+    {
+        get => new(_weaponStatsPanelX.Value, _weaponStatsPanelY.Value);
+        set { _weaponStatsPanelX.Value = Mathf.Round(value.x); _weaponStatsPanelY.Value = Mathf.Round(value.y); }
+    }
+
+    public static Vector2 BloodStatsPanelPosition
+    {
+        get => new(_bloodStatsPanelX.Value, _bloodStatsPanelY.Value);
+        set { _bloodStatsPanelX.Value = Mathf.Round(value.x); _bloodStatsPanelY.Value = Mathf.Round(value.y); }
     }
 
     public static Vector2 TeleportPanelPosition
@@ -193,6 +209,9 @@ internal static class Settings
         _loadoutsEnabled = config.Bind("Character", "Loadouts", true,
             "Show Loadouts in the control bar's Character menu: save your build (equipped gear, spell passives, Bloodcraft class and " +
             "shift spell) and put a saved one back on with one click. Bloodcraft parts need a Bloodcraft server.");
+        _statChoicesEnabled = config.Bind("Character", "StatChoices", true,
+            "Show Weapon Stats and Blood Stats in the control bar's Character menu: pick and reset your Bloodcraft expertise and legacy stats. " +
+            "They send Bloodcraft's chat commands (.wep, .bl) for you, so they only work on servers running Bloodcraft.");
         _sheetEnabled = config.Bind("Character", "Enabled", true,
             "Show a Stats button on the control bar that opens a full character sheet: every stat and its sources (gear, buffs, Bloodcraft bonuses).");
         _dpsEnabled = config.Bind("Dps", "Enabled", true,
@@ -247,6 +266,10 @@ internal static class Settings
         _sheetPanelY = config.Bind("Layout", "CharacterPanelY", 0f, "Character sheet window offset from the screen centre (y).");
         _loadoutPanelX = config.Bind("Layout", "LoadoutPanelX", -300f, "Loadouts window offset from the screen centre (x). Drag its title bar to change.");
         _loadoutPanelY = config.Bind("Layout", "LoadoutPanelY", 60f, "Loadouts window offset from the screen centre (y).");
+        _weaponStatsPanelX = config.Bind("Layout", "WeaponStatsPanelX", -280f, "Weapon Stats window offset from the screen centre (x). Drag its title bar to change.");
+        _weaponStatsPanelY = config.Bind("Layout", "WeaponStatsPanelY", 0f, "Weapon Stats window offset from the screen centre (y).");
+        _bloodStatsPanelX = config.Bind("Layout", "BloodStatsPanelX", 280f, "Blood Stats window offset from the screen centre (x). Drag its title bar to change.");
+        _bloodStatsPanelY = config.Bind("Layout", "BloodStatsPanelY", 0f, "Blood Stats window offset from the screen centre (y).");
         _teleportPanelX = config.Bind("Layout", "TeleportPanelX", -340f, "Teleport window offset from the screen centre (x). Drag its title bar to change.");
         _teleportPanelY = config.Bind("Layout", "TeleportPanelY", 0f, "Teleport window offset from the screen centre (y).");
         _teleportPopoutX = config.Bind("Layout", "TeleportPopoutX", 16f, "Teleport pop-out left edge, in reference pixels from the left of the screen. Drag its header to change.");

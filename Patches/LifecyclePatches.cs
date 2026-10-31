@@ -55,6 +55,7 @@ internal static class LifecyclePatches
             CooldownTester.OnWorldTeardown();
             LoadoutService.OnWorldTeardown();
             LoadoutStore.OnWorldTeardown();
+            StatChoices.OnWorldTeardown();
             Core.Reset();
         }
         catch (Exception ex)
