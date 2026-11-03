@@ -61,8 +61,12 @@ internal sealed class ControlBar
     /// <summary>Root width beyond the button area (padding, grip and resize strip).</summary>
     public static float Chrome => Pad * 2 + GripWidth + ResizeWidth + Gap * 2;
 
-    public ControlBar(Transform parent, IEnumerable<Entry> entries)
+    readonly RectTransform _screen;
+
+    /// <param name="parent">The canvas, which is the whole screen (menus are kept inside it).</param>
+    public ControlBar(RectTransform parent, IEnumerable<Entry> entries)
     {
+        _screen = parent;
         Root = UIFactory.CreateCard("ControlBar", parent, Theme.HudBg, Radius).Root;
         Root.anchorMin = Root.anchorMax = new Vector2(0f, 1f);
         Root.pivot = new Vector2(0f, 1f);
@@ -215,14 +219,35 @@ internal sealed class ControlBar
         _openMenu = menu;
         if (menu == null) return;
 
-        // Dropped down from its button, as wide as the button (or its widest item).
-        var at = menu.GroupButton.Rect;
-        float width = Mathf.Max(at.sizeDelta.x, menu.Group.Children.Max(c => c.Width)) + Pad * 2;
-        menu.Card.Place(at.anchoredPosition.x - Pad, -at.anchoredPosition.y + ButtonHeight + Gap, width, menu.Card.sizeDelta.y);
-        foreach (var (_, button) in menu.Items)
-            button.Rect.sizeDelta = new Vector2(width - Pad * 2, ButtonHeight);
+        PlaceMenu(menu);
         menu.Card.SetAsLastSibling();
         menu.Card.gameObject.SetActive(true);
+    }
+
+    // Dropped down from its button, as wide as the button (or its widest item). If it doesn't fit below
+    // (the bar is near the bottom of the screen) it opens upward instead, and it slides sideways to stay
+    // on screen. Redone every frame, so it follows the bar while the bar is dragged.
+    void PlaceMenu(Menu menu)
+    {
+        var at = menu.GroupButton.Rect;
+        float width = Mathf.Max(at.sizeDelta.x, menu.Group.Children.Max(c => c.Width)) + Pad * 2;
+        float height = menu.Card.sizeDelta.y;
+        Vector2 screen = _screen.rect.size;
+        Vector2 bar = Root.anchoredPosition; // the bar's top-left, from the screen's top-left (y down is negative)
+
+        // In the bar's coordinates: x right, y down from its top.
+        float buttonTop = -at.anchoredPosition.y;
+        float spaceAbove = -bar.y + buttonTop - Gap;
+        float spaceBelow = screen.y + bar.y - (buttonTop + ButtonHeight + Gap);
+        bool up = height > spaceBelow && spaceAbove > spaceBelow;
+        float y = up ? buttonTop - Gap - height : buttonTop + ButtonHeight + Gap;
+
+        float x = at.anchoredPosition.x - Pad;
+        x = Mathf.Clamp(bar.x + x, 0f, Mathf.Max(0f, screen.x - width)) - bar.x;
+
+        menu.Card.Place(x, y, width, height);
+        foreach (var (_, button) in menu.Items)
+            button.Rect.sizeDelta = new Vector2(width - Pad * 2, ButtonHeight);
     }
 
     /// <summary>The open drop-down menu, if any (counts as our UI for click blocking).</summary>
@@ -244,6 +269,8 @@ internal sealed class ControlBar
             Layout();
             break;
         }
+
+        if (_openMenu != null) PlaceMenu(_openMenu);
 
         float pulse = Mathf.PingPong(Time.realtimeSinceStartup * FlashSpeed * 2f, 1f);
         for (int i = 0; i < _buttons.Count; i++)

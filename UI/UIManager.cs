@@ -46,12 +46,13 @@ internal static class UIManager
     static bool _teleportsChanged;
 
     // Something the player can move: dragged by Handle (except over Exclude), position saved on release.
+    // Every frame it's put back at its saved spot, pushed in as far as needed to stay on screen.
     sealed class Draggable
     {
         public RectTransform Root;
         public RectTransform Handle;
         public RectTransform Exclude;
-        public bool Centred;        // anchored to the screen centre (windows) vs the top-left (HUD, bar)
+        public Func<Vector2> Load;
         public Action<Vector2> Save;
         public Action Click;        // pressed and released without dragging
     }
@@ -115,6 +116,7 @@ internal static class UIManager
         _teleports?.Update();
         _loadouts?.UpdateProgress(); // per frame so the bar moves smoothly
         HandlePointer();
+        KeepOnScreen();
 
         if (_huntsChanged)
         {
@@ -284,31 +286,35 @@ internal static class UIManager
             Toggle = Notifications.Click,
             GetLabel = () => Notifications.Text,
         });
-        _bar = new ControlBar(_root.transform, entries);
+        _bar = new ControlBar(_canvasRect, entries);
 
-        var bar = new Draggable { Root = _bar.Root, Handle = _bar.Grip, Save = p => Settings.BarPosition = p };
-        bar.Click = () =>
+        var bar = new Draggable
         {
-            _bar.ToggleRowColumn();
-            _bar.Root.anchoredPosition = ClampToScreen(bar, _bar.Root.anchoredPosition);
-            bar.Save(_bar.Root.anchoredPosition);
+            Root = _bar.Root, Handle = _bar.Grip,
+            Load = () => Settings.BarPosition, Save = p => Settings.BarPosition = p,
         };
+        bar.Click = _bar.ToggleRowColumn; // KeepOnScreen pulls the new shape in if needed
         _draggables.Add(bar);
-        _draggables.Add(new Draggable { Root = _hud.Root, Handle = _hud.Header, Save = p => Settings.HudPosition = p });
+        _draggables.Add(new Draggable
+        {
+            Root = _hud.Root, Handle = _hud.Header,
+            Load = () => Settings.HudPosition, Save = p => Settings.HudPosition = p,
+        });
         _draggables.Add(new Draggable
         {
             Root = _teleportPopout.Root, Handle = _teleportPopout.Header, Exclude = _teleportPopout.CloseButton,
-            Save = p => Settings.TeleportPopoutPosition = p,
+            Load = () => Settings.TeleportPopoutPosition, Save = p => Settings.TeleportPopoutPosition = p,
         });
         foreach (var window in _windows)
         {
             var w = window;
             _draggables.Add(new Draggable
             {
-                Root = w.Root, Handle = w.TitleBar, Exclude = w.CloseButton, Centred = true,
-                Save = p => w.SavedPosition = p,
+                Root = w.Root, Handle = w.TitleBar, Exclude = w.CloseButton,
+                Load = () => w.SavedPosition, Save = p => w.SavedPosition = p,
             });
         }
+        KeepOnScreen();
 
         HuntStore.Changed += OnHuntsChanged;
         FamiliarStore.Changed += OnFamiliarsChanged;
@@ -445,7 +451,22 @@ internal static class UIManager
         }
 
         if (!PassedThreshold(mouse, out Vector2 delta)) return;
-        _drag.Root.anchoredPosition = ClampToScreen(_drag, _dragStartPosition + delta);
+        _drag.Root.anchoredPosition = ClampToScreen(_drag.Root, _dragStartPosition + delta);
+    }
+
+    // Put everything (but what's being dragged) at its saved spot, kept fully on screen. Done every
+    // frame from the saved spot rather than the current one, so the screen shrinking (resolution, UI
+    // scale) or a panel growing (more tracker rows, a wider bar) pushes it in without saving that, and it
+    // goes back where the player left it once there's room again. Something saved near the bottom edge
+    // so grows upward instead of off the screen.
+    static void KeepOnScreen()
+    {
+        foreach (var d in _draggables)
+        {
+            if (d == _drag && _dragMoved) continue;
+            var position = ClampToScreen(d.Root, d.Load());
+            if (d.Root.anchoredPosition != position) d.Root.anchoredPosition = position;
+        }
     }
 
     // Only the width is dragged: the bar's height follows from how many rows the buttons need.
@@ -473,22 +494,23 @@ internal static class UIManager
         return true;
     }
 
-    static Vector2 ClampToScreen(Draggable d, Vector2 position)
+    /// <summary>
+    /// The anchored position nearest to this one that keeps the whole rect on screen. Works for any
+    /// point anchor and pivot (windows are centred, the bar and HUD hang from the top-left). If it's
+    /// bigger than the screen, its top-left stays on screen so the title bar can still be grabbed.
+    /// </summary>
+    static Vector2 ClampToScreen(RectTransform rect, Vector2 position)
     {
-        Vector2 size = _canvasRect.rect.size;
-        if (d.Centred)
-        {
-            Vector2 half = size * 0.5f;
-            position.x = Mathf.Clamp(position.x, -half.x, half.x);
-            position.y = Mathf.Clamp(position.y, -half.y, half.y);
-        }
-        else
-        {
-            Vector2 rootSize = d.Root.sizeDelta;
-            position.x = Mathf.Clamp(position.x, 0f, Mathf.Max(0f, size.x - rootSize.x));
-            position.y = Mathf.Clamp(position.y, -(size.y - 28f), 0f);
-        }
-        return position;
+        Vector2 screen = _canvasRect.rect.size;
+        Vector2 size = rect.sizeDelta; // anchors are a point, so this is the full size
+        Vector2 anchor = Vector2.Scale(rect.anchorMin, screen); // from the screen's bottom-left
+        Vector2 pivot = Vector2.Scale(rect.pivot, size);
+
+        float left = anchor.x + position.x - pivot.x;
+        float bottom = anchor.y + position.y - pivot.y;
+        left = Mathf.Clamp(left, 0f, Mathf.Max(0f, screen.x - size.x));
+        bottom = size.y > screen.y ? screen.y - size.y : Mathf.Clamp(bottom, 0f, screen.y - size.y);
+        return new Vector2(left - anchor.x + pivot.x, bottom - anchor.y + pivot.y);
     }
 
     // The draggable root drawn on top at this point, if any.

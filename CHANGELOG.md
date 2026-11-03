@@ -1,6 +1,8 @@
 ## 1.3.0
 - Changed: each server now has its own saved familiars and hotkeys, hunt list, respawn times, loadouts, teleport hotkeys and XP history. Window positions, settings and the boss schedule are still shared. A wiped server starts empty.
 - Changed: the Server Settings button only shows on a server that has settings, which is currently Noctveil. The boss alarm only runs there too, so it can no longer go off on other servers, even if you edited its schedule for one.
+- Changed: windows, the tracker, the control bar and the teleport pop-out now stay fully on screen. Before, half a window could be dragged off the edge. If the screen gets smaller (resolution or UI scale) or a panel grows, it's pushed in, then goes back where you left it once there's room. Something placed at the bottom edge grows upward.
+- Changed: the control bar's menus (Character, Server Settings) open upward when there's no room below, and shift sideways to stay on screen.
 - Your existing data moves to the first server you join after updating, so join the server it belongs to first. If it ends up on the wrong one, close the game and move the files between the folders in BepInEx/config/DragUI/servers (each has a server.txt naming the server).
 
 ## 1.2.0
