@@ -47,6 +47,7 @@ internal static class Ticker
         {
             if (Core.InGame)
             {
+                ServerData.Tick();
                 VBloodTracker.Tick();
                 BossAlarm.Tick();
                 AutoTeleport.Tick();

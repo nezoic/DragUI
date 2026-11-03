@@ -1,10 +1,8 @@
-using BepInEx;
-
 namespace DragUI.Services;
 
-// The familiar names the player has summoned by name, newest first, so they become one-click buttons,
-// each with an optional hotkey. Saved one per line ("name" or "name<TAB>hotkey") in
-// BepInEx/config/DragUI/familiars.txt.
+// The familiar names the player has summoned by name on this server, newest first, so they become
+// one-click buttons, each with an optional hotkey. Saved one per line ("name" or "name<TAB>hotkey") in
+// familiars.txt in the server's data folder (see ServerData).
 internal static class FamiliarStore
 {
     const int MaxSaved = 40;
@@ -15,8 +13,7 @@ internal static class FamiliarStore
         public Hotkey Hotkey;
     }
 
-    static readonly string _directory = Plugin.DataDirectory;
-    static readonly string _path = Path.Combine(_directory, "familiars.txt");
+    static string _path;
     static readonly List<Entry> _entries = new();
 
     public static event Action Changed;
@@ -74,38 +71,50 @@ internal static class FamiliarStore
     static int IndexOf(string name) =>
         _entries.FindIndex(e => string.Equals(e.Name, name, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>Read the current server's list (from ServerData, on joining it).</summary>
     public static void Load()
     {
         _entries.Clear();
+        if (!ServerData.TryGetPath("familiars.txt", out _path)) return;
         try
         {
-            if (!File.Exists(_path)) return;
-            foreach (var line in File.ReadAllLines(_path))
+            if (File.Exists(_path))
             {
-                var parts = line.Split('\t');
-                string name = FamiliarService.CleanName(parts[0]);
-                if (name.Length == 0 || IndexOf(name) >= 0 || _entries.Count >= MaxSaved) continue;
-                var hotkey = parts.Length > 1 && Hotkey.TryParse(parts[1], out var parsed) ? parsed : Hotkey.None;
-                if (!hotkey.IsNone && _entries.Any(e => e.Hotkey == hotkey)) hotkey = Hotkey.None;
-                _entries.Add(new Entry { Name = name, Hotkey = hotkey });
+                foreach (var line in File.ReadAllLines(_path))
+                {
+                    var parts = line.Split('\t');
+                    string name = FamiliarService.CleanName(parts[0]);
+                    if (name.Length == 0 || IndexOf(name) >= 0 || _entries.Count >= MaxSaved) continue;
+                    var hotkey = parts.Length > 1 && Hotkey.TryParse(parts[1], out var parsed) ? parsed : Hotkey.None;
+                    if (!hotkey.IsNone && _entries.Any(e => e.Hotkey == hotkey)) hotkey = Hotkey.None;
+                    _entries.Add(new Entry { Name = name, Hotkey = hotkey });
+                }
             }
         }
         catch (Exception ex)
         {
             Core.Log.LogWarning($"Couldn't read {_path}: {ex.Message}");
         }
+        Changed?.Invoke(); // the UI outlives a server switch
     }
 
     static void Save()
     {
+        if (_path == null) return;
         try
         {
-            Directory.CreateDirectory(_directory);
+            Directory.CreateDirectory(Path.GetDirectoryName(_path));
             File.WriteAllLines(_path, _entries.Select(e => e.Hotkey.IsNone ? e.Name : $"{e.Name}\t{e.Hotkey}"));
         }
         catch (Exception ex)
         {
             Core.Log.LogWarning($"Couldn't save {_path}: {ex.Message}");
         }
+    }
+
+    public static void OnWorldTeardown()
+    {
+        _entries.Clear();
+        _path = null;
     }
 }

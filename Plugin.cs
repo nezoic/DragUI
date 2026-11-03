@@ -31,9 +31,6 @@ internal class Plugin : BasePlugin
 
         MigrateFromVBloodHunter();
         Settings.Initialize(Config);
-        HuntStore.Load();
-        RespawnMemory.Load();
-        FamiliarStore.Load();
         BossAlarm.Load();
 
         _harmony = Harmony.CreateAndPatchAll(typeof(Plugin).Assembly, MyPluginInfo.PLUGIN_GUID);

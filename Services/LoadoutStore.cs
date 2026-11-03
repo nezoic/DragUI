@@ -3,8 +3,8 @@ using ProjectM.Network;
 
 namespace DragUI.Services;
 
-// Saved loadouts for the current character, in the order they were made. Saved in
-// BepInEx/config/DragUI/loadouts-<character>.json.
+// Saved loadouts for the current character on this server, in the order they were made. Saved in
+// loadouts-<character>.json in the server's data folder (see ServerData).
 internal static class LoadoutStore
 {
     public sealed class Loadout
@@ -60,7 +60,7 @@ internal static class LoadoutStore
         if (string.IsNullOrWhiteSpace(name)) return false;
 
         string safe = string.Concat(name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
-        _path = Path.Combine(Plugin.DataDirectory, $"loadouts-{safe}.json");
+        if (!ServerData.TryGetPath($"loadouts-{safe}.json", out _path)) return false;
         _loadouts = new List<Loadout>();
         try
         {

@@ -18,7 +18,8 @@ namespace DragUI.Services;
 // Gains are held for HoldSeconds so the quest line / V Blood death can arrive in either order.
 // Time only counts while gaining: gaps longer than IdleMinutes without XP aren't counted as play time.
 // The prestige levels come from Bloodcraft's messages; when unknown, ".lvl get" / ".prestige get exo"
-// are sent once and their replies hidden. Saved per character in BepInEx/config/DragUI/xp-<name>.json.
+// are sent once and their replies hidden. Saved per server and character in xp-<name>.json in the server's
+// data folder (see ServerData).
 internal static class ExperienceTracker
 {
     public enum Source { Quest, Mobs, VBlood }
@@ -341,9 +342,9 @@ internal static class ExperienceTracker
         string name = user.Read<User>().CharacterName.Value;
         if (string.IsNullOrWhiteSpace(name)) return false;
 
-        _character = name;
         string safe = string.Concat(name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
-        _path = Path.Combine(Plugin.DataDirectory, $"xp-{safe}.json");
+        if (!ServerData.TryGetPath($"xp-{safe}.json", out _path)) return false;
+        _character = name;
         _data = new SaveData();
         try
         {

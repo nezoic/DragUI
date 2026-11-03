@@ -185,7 +185,7 @@ internal sealed class ControlBar
 
         // Resize strip: the same height (its "<>" label fills it, centred).
         ResizeHandle.Place(left + width + Gap, Pad, ResizeWidth, gripHeight);
-        if (_openMenu != null) SetMenu(_openMenu); // follow its button
+        if (_openMenu != null) SetMenu(_openMenu.GroupButton.Rect.gameObject.activeSelf ? _openMenu : null); // follow its button
     }
 
     void BuildMenu(Menu menu)

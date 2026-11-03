@@ -1,3 +1,8 @@
+## 1.3.0
+- Changed: each server now has its own saved familiars and hotkeys, hunt list, respawn times, loadouts, teleport hotkeys and XP history. Window positions, settings and the boss schedule are still shared. A wiped server starts empty.
+- Changed: the Server Settings button only shows on a server that has settings, which is currently Noctveil. The boss alarm only runs there too, so it can no longer go off on other servers, even if you edited its schedule for one.
+- Your existing data moves to the first server you join after updating, so join the server it belongs to first. If it ends up on the wrong one, close the game and move the files between the folders in BepInEx/config/DragUI/servers (each has a server.txt naming the server).
+
 ## 1.2.0
 - New: Weapon Stats and Blood Stats in the Character menu (Bloodcraft). See the 12 stats for the weapon type or blood you have now as a grid of buttons, with chosen stats lit and numbered, their current values, base caps and your level. Click a stat to choose it. The window follows when you swap weapon or change blood, and doesn't need Eclipse.
 - New: a Reset stats button in both windows (.wep rst / .bl rst). It asks first, because the server can charge items for a reset.

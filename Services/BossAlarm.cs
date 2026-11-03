@@ -3,11 +3,11 @@ using BepInEx;
 
 namespace DragUI.Services;
 
-// Server-specific boss alarm (Noctveil's Apex/Prime bosses by default; set up in Server Settings ->
-// Noctveil): AlarmLeadMinutes before each scheduled spawn a soft chime plays (time to get out of combat)
+// Noctveil's boss alarm, for its Apex/Prime bosses (set up in Server Settings -> Noctveil, and silent on
+// other servers): AlarmLeadMinutes before each scheduled spawn a soft chime plays (time to get out of combat)
 // and a teleport notice for that boss goes into the control bar's notification slot, flashing at first
-// and staying until ButtonMinutes after the spawn (unless a newer notice replaces it). The schedule is a text file so it can be fitted to
-// any server; each line is "time | label | command", e.g. "23:00 | Apex Judgement | .stp tp apex".
+// and staying until ButtonMinutes after the spawn (unless a newer notice replaces it). The schedule is a text file so it can
+// follow the server's rotation; each line is "time | label | command", e.g. "23:00 | Apex Judgement | .stp tp apex".
 // Times are wall-clock in Settings.AlarmTimeZone (empty = this PC's time zone).
 internal static class BossAlarm
 {
@@ -125,7 +125,7 @@ internal static class BossAlarm
         if (!force && realNow < _nextCheckAt) return;
         _nextCheckAt = realNow + CheckIntervalSeconds;
 
-        if (!Enabled || _schedule.Count == 0 || !Core.InGame)
+        if (!Enabled || _schedule.Count == 0 || !Core.InGame || !ServerData.IsNoctveil)
         {
             Active = null;
             Next = null;

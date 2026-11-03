@@ -107,6 +107,7 @@ internal static class UIManager
         if (!_root.activeSelf) _root.SetActive(true);
 
         ApplyScale();
+        if (!ServerData.IsNoctveil) _noctveil.SetVisible(false); // left open on the last server
         UIFactory.RunPendingSubmits();
         TypingInUI = IsTypingInOurField() || (_familiars?.Capturing ?? false) || (_teleports?.Capturing ?? false);
         HandleHotkeys();
@@ -262,10 +263,12 @@ internal static class UIManager
             Toggle = _teleports.Toggle,
             GetLabel = () => AutoTeleport.PendingCount > 0 ? $"Teleport ({AutoTeleport.PendingCount})" : "Teleport",
         });
-        // Settings for particular servers, one entry per server.
+        // Settings for the server we're on, if it has any. Only Noctveil does so far; the UI outlives a
+        // server switch, so this is checked live.
         entries.Add(new()
         {
             Label = "Server Settings", Width = 128f,
+            IsVisible = () => ServerData.IsNoctveil,
             Children = new List<ControlBar.Entry>
             {
                 new() { Label = "Noctveil", IsOpen = () => _noctveil.Visible, Toggle = _noctveil.Toggle },

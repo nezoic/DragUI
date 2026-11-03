@@ -1,12 +1,11 @@
 using System.Globalization;
-using BepInEx;
 using DragUI.Data;
 
 namespace DragUI.Services;
 
 // Respawn durations measured exactly in-game (ghost respawn time minus the game's own time of death),
-// used ahead of the catalog defaults. Each line in BepInEx/config/DragUI/respawn-times.txt is
-// "<PrefabGUID>=<seconds>" after a version header.
+// used ahead of the catalog defaults. They differ by server, so they're kept in respawn-times.txt in the
+// server's data folder (see ServerData): each line is "<PrefabGUID>=<seconds>" after a version header.
 //
 // Only exact measurements are stored. Earlier versions also learned from poll observations, which drifted
 // badly on servers that keep dead V Bloods on their position list; files without the header are discarded.
@@ -14,7 +13,7 @@ internal static class RespawnMemory
 {
     const string Header = "# DragUI respawn times v2 (exact measurements only)";
     const string LegacyHeader = "# VBloodHunter respawn times v2 (exact measurements only)"; // same format, before the rename
-    static readonly string _path = Path.Combine(Plugin.DataDirectory, "respawn-times.txt");
+    static string _path;
     static readonly Dictionary<int, double> _learned = new();
 
     public enum Source { Learned, Default, Fallback }
@@ -51,9 +50,11 @@ internal static class RespawnMemory
         Save();
     }
 
+    /// <summary>Read the current server's times (from ServerData, on joining it).</summary>
     public static void Load()
     {
         _learned.Clear();
+        if (!ServerData.TryGetPath("respawn-times.txt", out _path)) return;
         try
         {
             if (!File.Exists(_path)) return;
@@ -84,6 +85,7 @@ internal static class RespawnMemory
 
     static void Save()
     {
+        if (_path == null) return;
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path));
@@ -95,5 +97,11 @@ internal static class RespawnMemory
         {
             Core.Log.LogWarning($"Couldn't save {_path}: {ex.Message}");
         }
+    }
+
+    public static void OnWorldTeardown()
+    {
+        _learned.Clear();
+        _path = null;
     }
 }

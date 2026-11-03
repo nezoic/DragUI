@@ -7,10 +7,10 @@ namespace DragUI.Services;
 
 // The player's ScarletTeleports teleports: their personal ones (.stp stp to set one where they stand,
 // .stp rtp to remove it) and the server's global ones, read from .stp ltp (its replies are hidden while
-// reading). Any of them can have a hotkey. Binds are saved per character in
-// BepInEx/config/DragUI/teleports-<character>.json, together with the personal-teleport limit: the server
-// only tells a player the limit when it's reached ("maximum number of teleports (N)"), so until then the
-// window assumes ScarletTeleports' default of 3.
+// reading). Any of them can have a hotkey. Binds are saved per server and character in
+// teleports-<character>.json in the server's data folder (see ServerData), together with the
+// personal-teleport limit: the server only tells a player the limit when it's reached ("maximum number of
+// teleports (N)"), so until then the window assumes ScarletTeleports' default of 3.
 internal static class TeleportStore
 {
     public const int DefaultMax = 3;
@@ -243,7 +243,7 @@ internal static class TeleportStore
         if (string.IsNullOrWhiteSpace(character)) return false;
 
         string safe = string.Concat(character.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
-        _path = Path.Combine(Plugin.DataDirectory, $"teleports-{safe}.json");
+        if (!ServerData.TryGetPath($"teleports-{safe}.json", out _path)) return false;
         _data = new SaveData();
         try
         {

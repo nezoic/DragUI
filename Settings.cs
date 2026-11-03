@@ -232,7 +232,7 @@ internal static class Settings
             "Only auto-accept requests from these players (comma-separated character names). Empty = anyone who requests.");
         _alarmEnabled = config.Bind("BossAlarm", "Enabled", false,
             "Sound an alarm and show a teleport button at each time in BepInEx/config/DragUI/boss-schedule.txt. " +
-            "Server-specific: the default schedule is the Noctveil server's Apex/Prime bosses. Toggle it in Server Settings -> Noctveil on the control bar.");
+            "Only runs on a server with Noctveil in its name: the default schedule is its Apex/Prime bosses. Toggle it in Server Settings -> Noctveil on the control bar.");
         _alarmVolume = config.Bind("BossAlarm", "Volume", 0.35f,
             "Alarm chime volume, 0 - 1 (0 = silent). Played through Windows, so the game's volume sliders don't affect it.");
         _alarmLeadMinutes = config.Bind("BossAlarm", "LeadMinutes", 2f,
