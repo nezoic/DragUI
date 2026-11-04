@@ -84,19 +84,25 @@ internal static class TypingLock
 
             if (Active)
             {
+                // Diag lines before and after each game call: if the game crashes in one, the log's last
+                // line says which.
+                Core.Diag("Typing lock: adding the input context...");
                 _contextObject ??= new ClientChatSystem.ChatFocusedInputContext();
                 _context ??= _contextObject.Cast<IInputContext>();
                 if (!_inputActions.IsContextRegistered(_context))
                     _inputActions.AddInputContext(_context, _inputWorld, (int)InputContextOrder.ChatInput + 1);
                 _registered = true;
+                Core.Diag("Typing lock: on.");
                 if (!_loggedOnce) Core.Log.LogInfo("Typing lock engaged (game keys are blocked while typing in the mod).");
                 _loggedOnce = true;
             }
             else
             {
+                Core.Diag("Typing lock: removing the input context...");
                 if (_context != null && _inputActions.IsContextRegistered(_context))
                     _inputActions.RemoveInputContext(_context);
                 _registered = false;
+                Core.Diag("Typing lock: off.");
             }
         }
         catch (Exception ex)

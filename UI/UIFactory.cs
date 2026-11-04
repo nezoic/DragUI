@@ -70,6 +70,12 @@ internal static class UIFactory
         return rect;
     }
 
+    /// <summary>True on the frame any mouse button goes down anywhere but over <paramref name="rect"/>
+    /// (e.g. to give up on a "press a key" capture when the player clicks elsewhere).</summary>
+    public static bool ClickedOutside(RectTransform rect) =>
+        (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1) || Input.GetMouseButtonDown(2))
+        && (rect == null || !RectTransformUtility.RectangleContainsScreenPoint(rect, Input.mousePosition, null));
+
     /// <summary>Stretch to fill the parent, inset by the given margins.</summary>
     public static RectTransform Fill(this RectTransform rect, float left = 0, float top = 0, float right = 0, float bottom = 0)
     {

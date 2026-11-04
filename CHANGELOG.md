@@ -1,3 +1,7 @@
+## 1.3.1
+- Fixed: after clicking a hotkey button (**+ key**) for a familiar or teleport, the game ignored all your keys until you pressed one, pressed Esc or closed the window, so it could look frozen. Clicking anywhere else now cancels it too.
+- With `Diagnostics = true`, the log now records each step of binding and using a hotkey, to help track down crash reports. If the game crashes for you while binding a hotkey, please send your `BepInEx/LogOutput.log` and the game's `Player.log` from straight after the crash.
+
 ## 1.3.0
 - Changed: each server now has its own saved familiars and hotkeys, hunt list, respawn times, loadouts, teleport hotkeys and XP history. Window positions, settings and the boss schedule are still shared. A wiped server starts empty.
 - Changed: the Server Settings button only shows on a server that has settings, which is currently Noctveil. The boss alarm only runs there too, so it can no longer go off on other servers, even if you edited its schedule for one.

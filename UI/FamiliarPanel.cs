@@ -30,7 +30,7 @@ internal sealed class FamiliarPanel : Window
 
     const string SavedFooter =
         "Binds with Bloodcraft's .fam sb (partial names work, not in combat); summoning the bound familiar again calls/dismisses it (.fam t). " +
-        "Hotkeys: click a key button and press a key (Esc cancels, Backspace clears). Use keys the game doesn't, e.g. F5-F12, numpad or Ctrl+key.";
+        "Hotkeys: click a key button and press a key (Esc or a click elsewhere cancels, Backspace clears). Use keys the game doesn't, e.g. F5-F12, numpad or Ctrl+key.";
     const string AllFooter =
         "List All reads every box with Bloodcraft's .fam boxes / cb / l (replies hidden) and then selects your box again. " +
         "Save adds a familiar to the quick summon list. Delete removes it from its box for good (.fam r).";
@@ -259,15 +259,20 @@ internal sealed class FamiliarPanel : Window
     {
         string previous = _capturing;
         _capturing = string.Equals(previous, name, StringComparison.OrdinalIgnoreCase) ? null : name;
+        Core.Diag(_capturing != null
+            ? $"Familiar hotkey: waiting for a key for {name} (game keys locked until a key, Esc or a click elsewhere)."
+            : $"Familiar hotkey: capture for {name} cancelled (key button clicked again).");
         if (previous != null) StyleKey(previous);
         if (_capturing != null) StyleKey(_capturing);
     }
 
-    void StopCapture()
+    void StopCapture(string reason = null)
     {
         string name = _capturing;
         _capturing = null;
-        if (name != null) StyleKey(name);
+        if (name == null) return;
+        if (reason != null) Core.Diag($"Familiar hotkey: capture for {name} cancelled ({reason}).");
+        StyleKey(name);
     }
 
     void StyleKey(string name)
@@ -294,24 +299,33 @@ internal sealed class FamiliarPanel : Window
     public void Update()
     {
         if (_capturing == null) return;
-        if (!Visible || Input.GetKeyDown(KeyCode.Escape))
-        {
-            StopCapture();
-        }
+        if (!Visible) StopCapture("window closed");
+        else if (Input.GetKeyDown(KeyCode.Escape)) StopCapture("Esc");
+        // A click anywhere but its own key button (which toggles it) gives up, so the game can't stay
+        // locked by a capture the player forgot about.
+        else if (UIFactory.ClickedOutside(_keyButtons.TryGetValue(_capturing, out var keyButton) ? keyButton.Rect : null))
+            StopCapture("clicked elsewhere");
         else if (Input.GetKeyDown(KeyCode.Backspace) || Input.GetKeyDown(KeyCode.Delete))
         {
             string name = _capturing;
             StopCapture();
+            Core.Diag($"Familiar hotkey: clearing {name}'s key.");
             FamiliarStore.SetHotkey(name, Hotkey.None);
         }
         else if (Hotkey.TryCapture(out var hotkey))
         {
             string name = _capturing;
             StopCapture();
+            Core.Diag($"Familiar hotkey: got {hotkey} ({hotkey.Key}) for {name}.");
             string other = HotkeyOwners.UsedByOther(hotkey, HotkeyOwners.Feature.Familiar);
-            if (other == null) FamiliarStore.SetHotkey(name, hotkey);
+            if (other == null)
+            {
+                FamiliarStore.SetHotkey(name, hotkey);
+                Core.Diag($"Familiar hotkey: {hotkey} saved for {name}.");
+            }
             else
             {
+                Core.Diag($"Familiar hotkey: {hotkey} refused, it's already {other}.");
                 _note = $"{hotkey} is already {other}. Pick another key.";
                 _noteUntil = Time.realtimeSinceStartupAsDouble + NoteSeconds;
             }

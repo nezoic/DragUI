@@ -376,10 +376,17 @@ internal static class UIManager
         var key = Settings.ToggleKey;
         if (key != KeyCode.None && Input.GetKeyDown(key)) ToggleList();
 
-        if (TeleportStore.TryGetPressed(out string teleport)) TeleportStore.Teleport(teleport);
+        if (TeleportStore.TryGetPressed(out string teleport))
+        {
+            Core.Diag($"Teleport hotkey pressed: {teleport}.");
+            TeleportStore.Teleport(teleport);
+        }
 
         if (_familiars != null && FamiliarStore.TryGetPressed(out string familiar))
+        {
+            Core.Diag($"Familiar hotkey pressed: {familiar}.");
             FamiliarService.Summon(familiar, remember: false);
+        }
     }
 
     static TMP_InputField FocusedField()

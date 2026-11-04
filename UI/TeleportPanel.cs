@@ -88,7 +88,7 @@ internal sealed class TeleportPanel : Window
 
         var footer = UIFactory.CreateText("Footer", Root,
             "Uses ScarletTeleports' .stp commands (tpa / tpd, tp, stp, rtp, ltp). Here moves a teleport to where you stand. " +
-            "Hotkeys: click a key button and press a key (Esc cancels, Backspace clears).",
+            "Hotkeys: click a key button and press a key (Esc or a click elsewhere cancels, Backspace clears).",
             11, Theme.TextDim);
         footer.enableWordWrapping = true;
         footer.rectTransform.Place(14, Height - FooterHeight, Width - 28, FooterHeight - 4);
@@ -258,15 +258,20 @@ internal sealed class TeleportPanel : Window
     {
         string previous = _capturing;
         _capturing = string.Equals(previous, name, StringComparison.OrdinalIgnoreCase) ? null : name;
+        Core.Diag(_capturing != null
+            ? $"Teleport hotkey: waiting for a key for {name} (game keys locked until a key, Esc or a click elsewhere)."
+            : $"Teleport hotkey: capture for {name} cancelled (key button clicked again).");
         if (previous != null) StyleKey(previous);
         if (_capturing != null) StyleKey(_capturing);
     }
 
-    void StopCapture()
+    void StopCapture(string reason = null)
     {
         string name = _capturing;
         _capturing = null;
-        if (name != null) StyleKey(name);
+        if (name == null) return;
+        if (reason != null) Core.Diag($"Teleport hotkey: capture for {name} cancelled ({reason}).");
+        StyleKey(name);
     }
 
     void StyleKey(string name)
@@ -290,21 +295,26 @@ internal sealed class TeleportPanel : Window
     public void Update()
     {
         if (_capturing == null) return;
-        if (!Visible || Input.GetKeyDown(KeyCode.Escape))
-        {
-            StopCapture();
-        }
+        if (!Visible) StopCapture("window closed");
+        else if (Input.GetKeyDown(KeyCode.Escape)) StopCapture("Esc");
+        // A click anywhere but its own key button (which toggles it) gives up, so the game can't stay
+        // locked by a capture the player forgot about.
+        else if (UIFactory.ClickedOutside(_keyButtons.TryGetValue(_capturing, out var keyButton) ? keyButton.Rect : null))
+            StopCapture("clicked elsewhere");
         else if (Input.GetKeyDown(KeyCode.Backspace) || Input.GetKeyDown(KeyCode.Delete))
         {
             string name = _capturing;
             StopCapture();
+            Core.Diag($"Teleport hotkey: clearing {name}'s key.");
             TeleportStore.SetHotkey(name, Hotkey.None);
         }
         else if (Hotkey.TryCapture(out var hotkey))
         {
             string name = _capturing;
             StopCapture();
+            Core.Diag($"Teleport hotkey: got {hotkey} ({hotkey.Key}) for {name}.");
             string problem = TeleportStore.SetHotkey(name, hotkey);
+            Core.Diag(problem == null ? $"Teleport hotkey: {hotkey} saved for {name}." : $"Teleport hotkey: refused: {problem}");
             if (problem != null)
             {
                 _note = problem;
