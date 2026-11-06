@@ -183,7 +183,7 @@ internal abstract class StatChoicesPanel : Window
         int count = _choices.Count;
         int limit = _choices.Limit;
         Set(_heading, known ? $"CHOSEN {count} OF {limit}" : "CHOSEN -");
-        ClassSynergies.Request();
+        ClassChoices.Request();
         UpdateLegend();
         foreach (var tile in _tiles) Restyle(tile, known, count >= limit);
 
@@ -198,11 +198,11 @@ internal abstract class StatChoicesPanel : Window
 
     void UpdateLegend()
     {
-        bool hasClass = ClassSynergies.Known && ClassSynergies.ClassName.Length > 0;
-        string text = !ClassSynergies.Known ? string.Empty
+        bool hasClass = ClassChoices.Known && ClassChoices.ClassName.Length > 0;
+        string text = !ClassChoices.Known ? string.Empty
             : !hasClass ? "No class chosen: no synergies"
-            : ClassSynergies.Multiplier.Length > 0 ? $"{ClassSynergies.ClassName} synergy: worth x{ClassSynergies.Multiplier}"
-            : $"{ClassSynergies.ClassName} synergy";
+            : ClassChoices.Multiplier.Length > 0 ? $"{ClassChoices.ClassName} synergy: worth x{ClassChoices.Multiplier}"
+            : $"{ClassChoices.ClassName} synergy";
         if (_legend.text == text && _legendSwatch.gameObject.activeSelf == hasClass) return;
         _legend.text = text;
         _legendSwatch.gameObject.SetActive(hasClass);
@@ -214,7 +214,7 @@ internal abstract class StatChoicesPanel : Window
     void Restyle(Tile tile, bool known, bool full)
     {
         var stat = tile.Stat;
-        bool synergy = ClassSynergies.Known && ClassSynergies.Has(_weapon, stat);
+        bool synergy = ClassChoices.Known && ClassChoices.Has(_weapon, stat);
         if (tile.Synergy.gameObject.activeSelf != synergy) tile.Synergy.gameObject.SetActive(synergy);
         string cap = stat.Cap != null ? $"base cap {stat.Cap}" : string.Empty;
         Set(tile.Value, stat.Slot > 0 && stat.Now != null

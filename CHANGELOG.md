@@ -1,3 +1,6 @@
+## 1.6.0
+- New: **Character → Class**, a class window like Weapon Stats and Blood Stats. It shows every Bloodcraft class with its weapon and blood stat synergies, your current class lit, and what changing class costs on this server. Click a class to change to it: you're asked first, with the cost, and the server's answer (changed, not enough items, passives still on) shows in the window. Your first class is free. Works with or without Eclipse, and the commands' replies are hidden from chat.
+
 ## 1.5.0
 - New: pick the mod's main colour in **Settings → Theme** on the control bar: Crimson (the default), Ember, Gold, Emerald, Teal, Azure, Royal, Violet, Rose or Silver, or your own as a hex code such as `#3A7BD5`. Title bars, borders, switched-on buttons, scrollbars and highlights all take shades of it, and the UI switches straight away, keeping your open windows open. It's saved as `AccentColor` / `CustomAccentColor` under `[Appearance]` in `nezoic.DragUI.cfg`. With a green colour, the class-synergy outlines turn gold so they still stand out.
 - Changed: the **Server Settings** button is now **Settings**, always on the bar. It holds **Theme**, plus **Noctveil** on Noctveil.

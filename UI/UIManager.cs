@@ -33,6 +33,7 @@ internal static class UIManager
     static LoadoutPanel _loadouts;
     static WeaponStatsPanel _weaponStats;
     static BloodStatsPanel _bloodStats;
+    static ClassPanel _class;
     static NoctveilPanel _noctveil;
     static ThemePanel _theme;
     static TeleportPanel _teleports;
@@ -214,6 +215,11 @@ internal static class UIManager
             _bloodStats = new BloodStatsPanel(_root.transform);
             _windows.Add(_bloodStats);
         }
+        if (Settings.ClassesEnabled)
+        {
+            _class = new ClassPanel(_root.transform);
+            _windows.Add(_class);
+        }
         if (Settings.DpsEnabled)
         {
             _dps = new DpsPanel(_root.transform);
@@ -253,6 +259,8 @@ internal static class UIManager
             character.Add(new() { Label = "Weapon Stats", Width = 104f, IsOpen = () => _weaponStats.Visible, Toggle = _weaponStats.Toggle });
             character.Add(new() { Label = "Blood Stats", Width = 104f, IsOpen = () => _bloodStats.Visible, Toggle = _bloodStats.Toggle });
         }
+        if (_class != null)
+            character.Add(new() { Label = "Class", IsOpen = () => _class.Visible, Toggle = _class.Toggle });
         if (character.Count > 0)
             entries.Add(new() { Label = "Character", Width = 96f, Children = character });
         if (_dps != null)
@@ -375,6 +383,7 @@ internal static class UIManager
         _loadouts = null;
         _weaponStats = null;
         _bloodStats = null;
+        _class = null;
         _noctveil = null;
         _theme = null;
         _teleports = null;

@@ -90,6 +90,22 @@ internal static class BloodcraftStats
     /// <summary>Bloodcraft's class synergy multiplier (valid when SynergiesKnown).</summary>
     public static float SynergyMultiplier => _synergyMult;
 
+    /// <summary>True once the config message (every class's synergies, the multiplier) has been seen.</summary>
+    public static bool ConfigKnown => _weaponCaps != null;
+
+    /// <summary>When the last progress message arrived (realtimeSinceStartup), to tell it from newer chat news of a class change.</summary>
+    public static double ProgressAt { get; private set; } = double.NegativeInfinity;
+
+    /// <summary>A class's synergy stat codes (1-12), from the config message.</summary>
+    public static bool TryGetSynergies(int classId, out IReadOnlyCollection<int> weapon, out IReadOnlyCollection<int> blood)
+    {
+        weapon = blood = Array.Empty<int>();
+        if (!_synergies.TryGetValue(classId, out var synergy)) return false;
+        weapon = (IReadOnlyCollection<int>)synergy.Weapon ?? Array.Empty<int>();
+        blood = (IReadOnlyCollection<int>)synergy.Blood ?? Array.Empty<int>();
+        return true;
+    }
+
     /// <summary>Does the current class have a synergy with weapon (or blood) stat <paramref name="code"/> (1-12)?</summary>
     public static bool HasSynergy(bool weapon, int code) =>
         _synergies.TryGetValue(_class, out var synergy) && (weapon ? synergy.Weapon : synergy.Blood)?.Contains(code) == true;
@@ -147,6 +163,7 @@ internal static class BloodcraftStats
         // expertise: percent, level, prestige, weapon type, chosen stats
         _expertise = new Track { Level = I(f[10]), Prestige = I(f[11]), Type = I(f[12]), Chosen = Codes(f[13]).ToArray() };
         _shiftSpell = int.TryParse(f[^1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int shift) ? shift : -1;
+        ProgressAt = UnityEngine.Time.realtimeSinceStartupAsDouble;
     }
 
     /// <summary>Bloodcraft's current stat bonuses (empty until its data has been seen this session).</summary>
@@ -191,5 +208,6 @@ internal static class BloodcraftStats
         _class = 0;
         _shiftSpell = -1;
         _synergies.Clear();
+        ProgressAt = double.NegativeInfinity;
     }
 }

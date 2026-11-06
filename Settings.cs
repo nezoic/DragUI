@@ -35,6 +35,8 @@ internal static class Settings
     static ConfigEntry<bool> _loadoutsEnabled;
     static ConfigEntry<float> _loadoutPanelX, _loadoutPanelY;
     static ConfigEntry<bool> _statChoicesEnabled;
+    static ConfigEntry<bool> _classesEnabled;
+    static ConfigEntry<float> _classPanelX, _classPanelY;
     static ConfigEntry<float> _weaponStatsPanelX, _weaponStatsPanelY;
     static ConfigEntry<float> _bloodStatsPanelX, _bloodStatsPanelY;
     static ConfigEntry<float> _noctveilPanelX, _noctveilPanelY;
@@ -88,6 +90,7 @@ internal static class Settings
     public static bool CooldownTesterEnabled => _cooldownTesterEnabled.Value;
     public static bool LoadoutsEnabled => _loadoutsEnabled.Value;
     public static bool StatChoicesEnabled => _statChoicesEnabled.Value;
+    public static bool ClassesEnabled => _classesEnabled.Value;
     public static float DpsFightTimeoutSeconds => Mathf.Clamp(_dpsFightTimeout.Value, 2f, 60f);
     public static bool HideXpMessages => _hideXpMessages.Value;
     public static float XpIdleMinutes => Mathf.Max(1f, _xpIdleMinutes.Value);
@@ -173,6 +176,12 @@ internal static class Settings
         set { _noctveilPanelX.Value = Mathf.Round(value.x); _noctveilPanelY.Value = Mathf.Round(value.y); }
     }
 
+    public static Vector2 ClassPanelPosition
+    {
+        get => new(_classPanelX.Value, _classPanelY.Value);
+        set { _classPanelX.Value = Mathf.Round(value.x); _classPanelY.Value = Mathf.Round(value.y); }
+    }
+
     public static Vector2 ThemePanelPosition
     {
         get => new(_themePanelX.Value, _themePanelY.Value);
@@ -244,6 +253,9 @@ internal static class Settings
         _statChoicesEnabled = config.Bind("Character", "StatChoices", true,
             "Show Weapon Stats and Blood Stats in the control bar's Character menu: pick and reset your Bloodcraft expertise and legacy stats. " +
             "They send Bloodcraft's chat commands (.wep, .bl) for you, so they only work on servers running Bloodcraft.");
+        _classesEnabled = config.Bind("Character", "Classes", true,
+            "Show Class in the control bar's Character menu: every Bloodcraft class with its weapon and blood stat synergies, and " +
+            "one click to pick or change class (.class s / .class c, with the cost shown first). Only works on servers running Bloodcraft.");
         _sheetEnabled = config.Bind("Character", "Enabled", true,
             "Show a Stats button on the control bar that opens a full character sheet: every stat and its sources (gear, buffs, Bloodcraft bonuses).");
         _dpsEnabled = config.Bind("Dps", "Enabled", true,
@@ -310,6 +322,8 @@ internal static class Settings
             "Whether the teleport pop-out (quick teleport buttons) is open. Open it with Pop out in the Teleport window.");
         _noctveilPanelX = config.Bind("Layout", "NoctveilPanelX", 320f, "Noctveil server settings window offset from the screen centre (x). Drag its title bar to change.");
         _noctveilPanelY = config.Bind("Layout", "NoctveilPanelY", 40f, "Noctveil server settings window offset from the screen centre (y).");
+        _classPanelX = config.Bind("Layout", "ClassPanelX", 0f, "Class window offset from the screen centre (x). Drag its title bar to change.");
+        _classPanelY = config.Bind("Layout", "ClassPanelY", 0f, "Class window offset from the screen centre (y).");
         _themePanelX = config.Bind("Layout", "ThemePanelX", 0f, "Theme window offset from the screen centre (x). Drag its title bar to change.");
         _themePanelY = config.Bind("Layout", "ThemePanelY", 80f, "Theme window offset from the screen centre (y).");
         _dpsPanelX = config.Bind("Layout", "DpsPanelX", -320f, "DPS meter window offset from the screen centre (x). Drag its title bar to change.");
