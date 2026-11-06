@@ -14,9 +14,12 @@ namespace DragUI.Patches;
 //     which consumes every game action for the contexts below it;
 //   * registering our OWN instance of that game class (order 100) while we type gives the same lock
 //     with no injected types and no managed callbacks - an injected IInputContext crashed natively;
-//   * the right InputActionSystem is the one GameplayInputSystem holds (a world lookup found none);
-//   * movement isn't a button action, so GameplayInputSystem is also skipped (with held movement
-//     cleared) while typing.
+//   * the right InputActionSystem is the one GameplayInputSystem holds (a world lookup found none).
+// That context alone is the whole lock: it filters movement, casts and keybinds before
+// GameplayInputSystem and AbilityInputSystem run (as ChatPlus also found). Up to 1.3.1 we also skipped
+// GameplayInputSystem and cleared the character's EntityInput from its prefix while typing; on some
+// PCs that write crashed the game with an AccessViolationException (uncatchable), and skipping the
+// system could leave a key latched as held. So nothing here touches game components or skips a system.
 // Add/remove happen on our Ticker, never inside a game system. Teardown only drops references: the
 // dying world's InputActionSystem takes the registration with it.
 [HarmonyPatch]
@@ -36,33 +39,22 @@ internal static class TypingLock
     /// <summary>True while one of our text boxes has the keyboard (plus a short grace after).</summary>
     public static bool Active { get; private set; }
 
+    /// <summary>Only finds the InputActionSystem (once per world). Never skips the system.</summary>
     [HarmonyPatch(typeof(GameplayInputSystem), nameof(GameplayInputSystem.OnUpdate))]
     [HarmonyPrefix]
-    static bool GameplayInputPrefix(GameplayInputSystem __instance)
+    static void CaptureInputActions(GameplayInputSystem __instance)
     {
+        if (_inputActions != null) return;
         try
         {
-            if (_inputActions == null && __instance._InputActionSystem != null)
-            {
-                _inputActions = __instance._InputActionSystem;
-                _inputWorld = _inputActions.World;
-            }
-            if (!Active) return true;
-
-            var character = Core.LocalCharacter;
-            if (character != Entity.Null && character.Has<EntityInput>())
-            {
-                var input = character.Read<EntityInput>();
-                input.Movement = default;
-                input.State = default;
-                character.Write(input);
-            }
-            return false;
+            var inputActions = __instance._InputActionSystem;
+            if (inputActions == null) return;
+            _inputActions = inputActions;
+            _inputWorld = inputActions.World;
         }
         catch (Exception ex)
         {
-            Core.Diag($"Typing lock (movement) skipped: {ex.Message}");
-            return true; // never freeze the game's input
+            Core.Diag($"Typing lock: couldn't find the input system yet: {ex.Message}");
         }
     }
 

@@ -35,12 +35,9 @@ internal static class ClickGuard
     {
         try
         {
-            // Backstop for the typing lock: no casts at all while typing in one of our text boxes.
-            if (TypingLock.Active && Core.InGame)
-            {
-                CancelCast(onlyPrimary: false);
-                return false;
-            }
+            // No typing-lock branch here: the lock's input context already stops casts while typing, and
+            // skipping this system / writing EntityAbilityInput every frame from inside it is the kind of
+            // per-frame component write that crashed some PCs in TypingLock (1.3.1).
 
             if (!Settings.BlockClicksOverUI || !Core.InGame) return true;
 

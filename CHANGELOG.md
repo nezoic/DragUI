@@ -1,3 +1,6 @@
+## 1.3.2
+- Fixed: the game could crash as soon as you clicked into a DragUI text box (a loadout, familiar or teleport name) or a hotkey button. On some PCs, the code that stopped your keys moving the character while you typed crashed the game. Keys typed into DragUI are still kept from the game, now without that code.
+
 ## 1.3.1
 - Fixed: after clicking a hotkey button (**+ key**) for a familiar or teleport, the game ignored all your keys until you pressed one, pressed Esc or closed the window, so it could look frozen. Clicking anywhere else now cancels it too.
 - With `Diagnostics = true`, the log now records each step of binding and using a hotkey, to help track down crash reports. If the game crashes for you while binding a hotkey, please send your `BepInEx/LogOutput.log` and the game's `Player.log` from straight after the crash.
