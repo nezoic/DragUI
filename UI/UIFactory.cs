@@ -5,30 +5,147 @@ using UnityEngine.UI;
 
 namespace DragUI.UI;
 
+// The palette. The accent colours (buttons that are on, title bars, outlines, highlights) all come
+// from one base colour, the player's choice in the config ([Appearance] AccentColor / CustomAccentColor),
+// by the same hue with the brightness and saturation offsets the original crimson theme used.
+// Read when the UI is built; picking a colour (Settings -> Theme, or a config manager) rebuilds the UI.
 internal static class Theme
 {
     public static readonly Color PanelBg = new(0.075f, 0.065f, 0.08f, 0.95f);
     public static readonly Color HudBg = new(0.075f, 0.065f, 0.08f, 0.86f);
-    public static readonly Color CardOutline = new(0.62f, 0.18f, 0.21f, 0.65f);
     public static readonly Color Shadow = new(0f, 0f, 0f, 0.55f);
-    public static readonly Color TitleBg = new(0.24f, 0.05f, 0.07f, 0.95f);
     public static readonly Color Divider = new(1f, 1f, 1f, 0.06f);
     public static readonly Color RowAlt = new(1f, 1f, 1f, 0.03f);
-    public static readonly Color RowHunted = new(0.70f, 0.12f, 0.15f, 0.17f);
     public static readonly Color Button = new(0.17f, 0.15f, 0.17f, 1f);
     public static readonly Color ButtonHover = new(0.27f, 0.23f, 0.26f, 1f);
     public static readonly Color ButtonPressed = new(0.12f, 0.10f, 0.12f, 1f);
     public static readonly Color ButtonOutline = new(1f, 1f, 1f, 0.08f);
-    public static readonly Color Accent = new(0.66f, 0.12f, 0.15f, 1f);
-    public static readonly Color AccentHover = new(0.80f, 0.18f, 0.21f, 1f);
     public static readonly Color Text = new(0.92f, 0.90f, 0.88f, 1f);
     public static readonly Color TextDim = new(0.62f, 0.60f, 0.60f, 1f);
     public static readonly Color Alive = new(0.47f, 0.83f, 0.47f, 1f);
-    public static readonly Color Synergy = new(0.47f, 0.83f, 0.47f, 0.9f); // class-synergy stat outline
     public static readonly Color Respawning = new(0.92f, 0.73f, 0.32f, 1f);
     public static readonly Color Due = new(1f, 0.50f, 0.33f, 1f);
     public static readonly Color Unknown = new(0.55f, 0.55f, 0.58f, 1f);
+
+    /// <summary>The palette's base colours (all dark enough for the light button text to read on).</summary>
+    public static readonly Dictionary<AccentColor, Color> Palette = new()
+    {
+        [AccentColor.Crimson] = new(0.66f, 0.12f, 0.15f),
+        [AccentColor.Ember] = new(0.72f, 0.30f, 0.08f),
+        [AccentColor.Gold] = new(0.62f, 0.46f, 0.08f),
+        [AccentColor.Emerald] = new(0.12f, 0.52f, 0.28f),
+        [AccentColor.Teal] = new(0.07f, 0.50f, 0.52f),
+        [AccentColor.Azure] = new(0.12f, 0.40f, 0.72f),
+        [AccentColor.Royal] = new(0.27f, 0.25f, 0.70f),
+        [AccentColor.Violet] = new(0.48f, 0.18f, 0.66f),
+        [AccentColor.Rose] = new(0.70f, 0.18f, 0.45f),
+        [AccentColor.Silver] = new(0.48f, 0.48f, 0.52f),
+    };
+
+    /// <summary>On buttons, tabs and filters that are switched on; progress fills.</summary>
+    public static Color Accent { get; private set; }
+    /// <summary>Hover on accent buttons; highlighted text (tracked boss, next spawn, live fight).</summary>
+    public static Color AccentHover { get; private set; }
+    /// <summary>Window and card borders; a focused text box.</summary>
+    public static Color CardOutline { get; private set; }
+    /// <summary>Window title bars and the tracker header.</summary>
+    public static Color TitleBg { get; private set; }
+    /// <summary>A highlighted list row (hunted V Blood, picked fight).</summary>
+    public static Color RowHunted { get; private set; }
+    public static Color CheckboxOutline { get; private set; }
+    public static Color ScrollHandle { get; private set; }
+    public static Color TextSelection { get; private set; }
+    /// <summary>Class-synergy stat outline: green, or gold when the accent itself is green.</summary>
+    public static Color Synergy { get; private set; }
+
+    static Theme() => Apply(Palette[AccentColor.Crimson]);
+
+    /// <summary>Use the colour from the config. Called before the UI is built.</summary>
+    public static void Load()
+    {
+        string custom = Settings.CustomAccentColor;
+        if (custom.Length > 0)
+        {
+            if (TryParseHex(custom, out var color))
+            {
+                Apply(color);
+                Core.Log.LogInfo($"Theme: custom accent {custom}.");
+                return;
+            }
+            Core.Log.LogWarning($"Theme: CustomAccentColor '{custom}' isn't a colour like #3A7BD5; using {Settings.AccentColor}.");
+        }
+        Apply(Palette.TryGetValue(Settings.AccentColor, out var chosen) ? chosen : Palette[AccentColor.Crimson]);
+    }
+
+    static void Apply(Color baseColor)
+    {
+        // Offsets measured from the original crimson theme (base S 0.82, V 0.66).
+        Accent = Shade(baseColor, 1f, 1f, 1f);
+        AccentHover = HoverOf(baseColor);
+        CardOutline = Shade(baseColor, 0.87f, 0.94f, 0.65f);
+        TitleBg = Shade(baseColor, 0.97f, 0.36f, 0.95f);
+        RowHunted = Shade(baseColor, 1f, 1.06f, 0.17f);
+        CheckboxOutline = Shade(baseColor, 0.87f, 0.94f, 0.8f);
+        ScrollHandle = Shade(baseColor, 0.83f, 0.94f, 0.9f);
+        TextSelection = Shade(baseColor, 1f, 1f, 0.5f);
+        ToHsv(baseColor, out float h, out float s, out _);
+        bool greenAccent = s > 0.25f && h >= 75f && h <= 170f;
+        Synergy = greenAccent ? new Color(0.95f, 0.80f, 0.35f, 0.9f) : new Color(0.47f, 0.83f, 0.47f, 0.9f);
+    }
+
+    /// <summary>The hover shade of an accent colour (lighter, a little less saturated).</summary>
+    public static Color HoverOf(Color baseColor) => Shade(baseColor, 0.95f, 1.21f, 1f);
+
+    /// <summary>The same hue with its saturation and brightness scaled.</summary>
+    static Color Shade(Color baseColor, float sScale, float vScale, float alpha)
+    {
+        ToHsv(baseColor, out float h, out float s, out float v);
+        return FromHsv(h, s * sScale, v * vScale, alpha);
+    }
+
+    /// <summary>"#RRGGBB" or "RRGGBB".</summary>
+    public static bool TryParseHex(string text, out Color color)
+    {
+        color = default;
+        string hex = text.Trim().TrimStart('#');
+        if (hex.Length != 6 || !int.TryParse(hex, System.Globalization.NumberStyles.HexNumber, null, out int rgb)) return false;
+        color = new Color(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f);
+        return true;
+    }
+
+    // Our own HSV maths (hue in degrees), so it doesn't lean on Unity statics with out parameters through interop.
+    static void ToHsv(Color c, out float h, out float s, out float v)
+    {
+        float max = Mathf.Max(c.r, Mathf.Max(c.g, c.b)), min = Mathf.Min(c.r, Mathf.Min(c.g, c.b)), d = max - min;
+        v = max;
+        s = max <= 0f ? 0f : d / max;
+        if (d <= 0f) h = 0f;
+        else if (max == c.r) h = 60f * ((c.g - c.b) / d % 6f);
+        else if (max == c.g) h = 60f * ((c.b - c.r) / d + 2f);
+        else h = 60f * ((c.r - c.g) / d + 4f);
+        if (h < 0f) h += 360f;
+    }
+
+    static Color FromHsv(float h, float s, float v, float alpha)
+    {
+        s = Mathf.Clamp01(s);
+        v = Mathf.Clamp01(v);
+        float c = v * s, x = c * (1f - Mathf.Abs(h / 60f % 2f - 1f)), m = v - c;
+        (float r, float g, float b) = (h % 360f) switch
+        {
+            < 60f => (c, x, 0f),
+            < 120f => (x, c, 0f),
+            < 180f => (0f, c, x),
+            < 240f => (0f, x, c),
+            < 300f => (x, 0f, c),
+            _ => (c, 0f, x),
+        };
+        return new Color(r + m, g + m, b + m, alpha);
+    }
 }
+
+/// <summary>The palette offered in the config.</summary>
+public enum AccentColor { Crimson, Ember, Gold, Emerald, Teal, Azure, Royal, Violet, Rose, Silver }
 
 // Minimal uGUI builder. Layout is done with explicit anchors/positions rather than layout groups so
 // it behaves predictably under IL2CPP.
@@ -238,7 +355,7 @@ internal static class UIFactory
     {
         var box = CreateButton(name, parent, string.Empty, 12, onClick, radius: 5f, outline: false);
         box.SetColors(new Color(0.11f, 0.10f, 0.11f, 1f), new Color(0.22f, 0.19f, 0.21f, 1f));
-        AddOutline(box.Rect, 5f, new Color(0.62f, 0.18f, 0.21f, 0.8f));
+        AddOutline(box.Rect, 5f, Theme.CheckboxOutline);
         var mark = CreatePanel("Mark", box.Rect, Theme.AccentHover, raycast: false).Rounded(3f);
         mark.rectTransform.Fill(5, 5, 5, 5);
         return new CheckboxRef { Box = box, Mark = mark };
@@ -267,7 +384,7 @@ internal static class UIFactory
         field.customCaretColor = true;
         field.caretColor = Theme.Text;
         field.caretWidth = 2;
-        field.selectionColor = new Color(0.66f, 0.12f, 0.15f, 0.5f);
+        field.selectionColor = Theme.TextSelection;
 
         var viewport = CreateRect("TextArea", rect).Fill(8, 0, 8, 0);
         viewport.gameObject.AddComponent<RectMask2D>();
@@ -344,7 +461,7 @@ internal static class UIFactory
         trackRect.anchoredPosition = Vector2.zero;
 
         var slidingArea = CreateRect("SlidingArea", trackRect).Fill();
-        var handle = CreatePanel("Handle", slidingArea, new Color(0.62f, 0.20f, 0.22f, 0.9f)).Rounded(scrollbarWidth / 2f);
+        var handle = CreatePanel("Handle", slidingArea, Theme.ScrollHandle).Rounded(scrollbarWidth / 2f);
         handle.rectTransform.Fill();
 
         var scrollbar = track.gameObject.AddComponent<Scrollbar>();

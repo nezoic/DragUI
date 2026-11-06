@@ -194,10 +194,8 @@ internal sealed class ControlBar
 
     void BuildMenu(Menu menu)
     {
-        float width = Mathf.Max(menu.GroupButton.Rect.sizeDelta.x, menu.Group.Children.Max(c => c.Width));
+        // Sized and laid out by PlaceMenu, which leaves out items whose IsVisible is false.
         menu.Card = UIFactory.CreateCard(menu.Group.Label + "Menu", Root, Theme.HudBg, Radius).Root;
-        menu.Card.sizeDelta = new Vector2(width + Pad * 2, Pad * 2 + menu.Group.Children.Count * (ButtonHeight + Gap) - Gap);
-        float y = Pad;
         foreach (var child in menu.Group.Children)
         {
             var c = child;
@@ -206,9 +204,7 @@ internal sealed class ControlBar
                 SetMenu(null);
                 c.Toggle();
             }, radius: 7f);
-            button.Rect.Place(Pad, y, width, ButtonHeight);
             menu.Items.Add((c, button));
-            y += ButtonHeight + Gap;
         }
         menu.Card.gameObject.SetActive(false);
     }
@@ -231,7 +227,18 @@ internal sealed class ControlBar
     {
         var at = menu.GroupButton.Rect;
         float width = Mathf.Max(at.sizeDelta.x, menu.Group.Children.Max(c => c.Width)) + Pad * 2;
-        float height = menu.Card.sizeDelta.y;
+
+        // The items shown right now, stacked from the top.
+        float itemsBottom = Pad;
+        foreach (var (entry, button) in menu.Items)
+        {
+            bool show = entry.IsVisible?.Invoke() ?? true;
+            if (button.Rect.gameObject.activeSelf != show) button.Rect.gameObject.SetActive(show);
+            if (!show) continue;
+            button.Rect.Place(Pad, itemsBottom, width - Pad * 2, ButtonHeight);
+            itemsBottom += ButtonHeight + Gap;
+        }
+        float height = Mathf.Max(itemsBottom - Gap, Pad) + Pad;
         Vector2 screen = _screen.rect.size;
         Vector2 bar = Root.anchoredPosition; // the bar's top-left, from the screen's top-left (y down is negative)
 
@@ -246,8 +253,6 @@ internal sealed class ControlBar
         x = Mathf.Clamp(bar.x + x, 0f, Mathf.Max(0f, screen.x - width)) - bar.x;
 
         menu.Card.Place(x, y, width, height);
-        foreach (var (_, button) in menu.Items)
-            button.Rect.sizeDelta = new Vector2(width - Pad * 2, ButtonHeight);
     }
 
     /// <summary>The open drop-down menu, if any (counts as our UI for click blocking).</summary>
@@ -276,7 +281,8 @@ internal sealed class ControlBar
         for (int i = 0; i < _buttons.Count; i++)
             if (_shown[i]) Restyle(_buttons[i].Entry, _buttons[i].Button, pulse);
         if (_openMenu != null)
-            foreach (var (entry, button) in _openMenu.Items) Restyle(entry, button, pulse);
+            foreach (var (entry, button) in _openMenu.Items)
+                if (button.Rect.gameObject.activeSelf) Restyle(entry, button, pulse);
     }
 
     static void Restyle(Entry entry, UIFactory.ButtonRef button, float pulse)

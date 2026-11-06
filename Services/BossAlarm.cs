@@ -3,7 +3,7 @@ using BepInEx;
 
 namespace DragUI.Services;
 
-// Noctveil's boss alarm, for its Apex/Prime bosses (set up in Server Settings -> Noctveil, and silent on
+// Noctveil's boss alarm, for its Apex/Prime bosses (set up in Settings -> Noctveil, and silent on
 // other servers): AlarmLeadMinutes before each scheduled spawn a soft chime plays (time to get out of combat)
 // and a teleport notice for that boss goes into the control bar's notification slot, flashing at first
 // and staying until ButtonMinutes after the spawn (unless a newer notice replaces it). The schedule is a text file so it can

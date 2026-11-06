@@ -34,6 +34,7 @@ internal static class UIManager
     static WeaponStatsPanel _weaponStats;
     static BloodStatsPanel _bloodStats;
     static NoctveilPanel _noctveil;
+    static ThemePanel _theme;
     static TeleportPanel _teleports;
     static TeleportPopout _teleportPopout;
     static readonly List<Window> _windows = new();
@@ -44,6 +45,7 @@ internal static class UIManager
     static bool _familiarsChanged;
     static bool _loadoutsChanged;
     static bool _teleportsChanged;
+    static bool _rebuildRequested; // the accent colour changed: build the UI again in the new one
 
     // Something the player can move: dragged by Handle (except over Exclude), position saved on release.
     // Every frame it's put back at its saved spot, pushed in as far as needed to stay on screen.
@@ -107,6 +109,14 @@ internal static class UIManager
         }
         if (!_root.activeSelf) _root.SetActive(true);
 
+        // Not while a text box, hotkey capture, drag or resize is in progress: the rebuild would cut it off.
+        if (_rebuildRequested && _drag == null && !_resizing && !IsTypingInOurField()
+            && !(_familiars?.Capturing ?? false) && !(_teleports?.Capturing ?? false))
+        {
+            _rebuildRequested = false;
+            Rebuild();
+        }
+
         ApplyScale();
         if (!ServerData.IsNoctveil) _noctveil.SetVisible(false); // left open on the last server
         UIFactory.RunPendingSubmits();
@@ -154,6 +164,7 @@ internal static class UIManager
 
     static void Build()
     {
+        Theme.Load();
         _root = new GameObject("DragUI");
         Object.DontDestroyOnLoad(_root);
         _root.layer = 5;
@@ -215,6 +226,8 @@ internal static class UIManager
         }
         _noctveil = new NoctveilPanel(_root.transform);
         _windows.Add(_noctveil);
+        _theme = new ThemePanel(_root.transform);
+        _windows.Add(_theme);
         _teleportPopout = new TeleportPopout(_root.transform);
         _teleports = new TeleportPanel(_root.transform, _teleportPopout.Toggle);
         _windows.Add(_teleports);
@@ -265,15 +278,19 @@ internal static class UIManager
             Toggle = _teleports.Toggle,
             GetLabel = () => AutoTeleport.PendingCount > 0 ? $"Teleport ({AutoTeleport.PendingCount})" : "Teleport",
         });
-        // Settings for the server we're on, if it has any. Only Noctveil does so far; the UI outlives a
-        // server switch, so this is checked live.
+        // The mod's own settings, plus those for the server we're on if it has any. Only Noctveil does so
+        // far; the UI outlives a server switch, so that item is checked live.
         entries.Add(new()
         {
-            Label = "Server Settings", Width = 128f,
-            IsVisible = () => ServerData.IsNoctveil,
+            Label = "Settings",
             Children = new List<ControlBar.Entry>
             {
-                new() { Label = "Noctveil", IsOpen = () => _noctveil.Visible, Toggle = _noctveil.Toggle },
+                new() { Label = "Theme", IsOpen = () => _theme.Visible, Toggle = _theme.Toggle },
+                new()
+                {
+                    Label = "Noctveil", IsVisible = () => ServerData.IsNoctveil,
+                    IsOpen = () => _noctveil.Visible, Toggle = _noctveil.Toggle,
+                },
             },
         });
         // Notification slot: shows the newest notice from any feature (e.g. a boss alarm's teleport).
@@ -321,7 +338,20 @@ internal static class UIManager
         FamiliarCatalog.Changed += OnFamiliarsChanged;
         LoadoutStore.Changed += OnLoadoutsChanged;
         TeleportStore.Changed += OnTeleportsChanged;
+        Settings.AppearanceChanged += OnAppearanceChanged;
         Core.Log.LogInfo("UI built.");
+    }
+
+    // Every window, button and outline takes its colours when it's made, so a new accent colour means
+    // building the UI again. Positions and the tracker / pop-out are kept in the config; the windows
+    // that were open are reopened in the same stacking order.
+    static void Rebuild()
+    {
+        var open = _windows.Where(w => w.Visible).OrderBy(w => w.Root.GetSiblingIndex()).Select(w => w.GetType()).ToList();
+        Destroy();
+        Build();
+        foreach (var type in open) _windows.FirstOrDefault(w => w.GetType() == type)?.SetVisible(true);
+        Core.Diag($"Theme changed: UI rebuilt, {open.Count} window(s) reopened.");
     }
 
     public static void Destroy()
@@ -331,6 +361,7 @@ internal static class UIManager
         FamiliarCatalog.Changed -= OnFamiliarsChanged;
         LoadoutStore.Changed -= OnLoadoutsChanged;
         TeleportStore.Changed -= OnTeleportsChanged;
+        Settings.AppearanceChanged -= OnAppearanceChanged;
         if (_root != null) Object.Destroy(_root);
         _root = null;
         _bar = null;
@@ -345,6 +376,7 @@ internal static class UIManager
         _weaponStats = null;
         _bloodStats = null;
         _noctveil = null;
+        _theme = null;
         _teleports = null;
         _teleportPopout = null;
         _windows.Clear();
@@ -360,6 +392,7 @@ internal static class UIManager
     static void OnFamiliarsChanged() => _familiarsChanged = true;
     static void OnLoadoutsChanged() => _loadoutsChanged = true;
     static void OnTeleportsChanged() => _teleportsChanged = true;
+    static void OnAppearanceChanged() => _rebuildRequested = true;
 
     static void ApplyScale()
     {

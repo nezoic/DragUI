@@ -1,3 +1,7 @@
+## 1.5.0
+- New: pick the mod's main colour in **Settings → Theme** on the control bar: Crimson (the default), Ember, Gold, Emerald, Teal, Azure, Royal, Violet, Rose or Silver, or your own as a hex code such as `#3A7BD5`. Title bars, borders, switched-on buttons, scrollbars and highlights all take shades of it, and the UI switches straight away, keeping your open windows open. It's saved as `AccentColor` / `CustomAccentColor` under `[Appearance]` in `nezoic.DragUI.cfg`. With a green colour, the class-synergy outlines turn gold so they still stand out.
+- Changed: the **Server Settings** button is now **Settings**, always on the bar. It holds **Theme**, plus **Noctveil** on Noctveil.
+
 ## 1.4.0
 - New: a **V Bloods** filter in the Familiars window. After **List All** has read every box, click **V Bloods** to show only your V Blood familiars; click it again to show them all.
 - New: in **Weapon Stats** and **Blood Stats**, stats your Bloodcraft class has a synergy with get a green outline. Your class gets extra from those stats (Bloodcraft's synergy multiplier, e.g. x1.5). The legend above the grid names your class and the multiplier. Without Eclipse, the mod asks Bloodcraft with `.class lst` (reply hidden), and asks again after you change class.

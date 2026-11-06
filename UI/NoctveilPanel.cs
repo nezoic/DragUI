@@ -4,7 +4,7 @@ using DragUI.Services;
 
 namespace DragUI.UI;
 
-// Server Settings -> Noctveil: things specific to the Noctveil server. For now its Apex / Prime boss
+// Settings -> Noctveil: things specific to the Noctveil server. For now its Apex / Prime boss
 // alarm: on/off, a test chime, the next boss and the schedule (next one highlighted). The alarm's
 // teleport button goes into the control bar's notification slot.
 internal sealed class NoctveilPanel : Window

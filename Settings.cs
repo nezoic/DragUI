@@ -1,5 +1,6 @@
 using BepInEx.Configuration;
 using UnityEngine;
+using DragUI.UI;
 
 namespace DragUI;
 
@@ -7,6 +8,8 @@ internal static class Settings
 {
     static ConfigEntry<KeyCode> _toggleKey;
     static ConfigEntry<float> _uiScale;
+    static ConfigEntry<AccentColor> _accentColor;
+    static ConfigEntry<string> _customAccentColor;
     static ConfigEntry<float> _pollSeconds;
     static ConfigEntry<int> _fallbackRespawnSeconds;
     static ConfigEntry<bool> _learnRespawnTimes;
@@ -35,6 +38,7 @@ internal static class Settings
     static ConfigEntry<float> _weaponStatsPanelX, _weaponStatsPanelY;
     static ConfigEntry<float> _bloodStatsPanelX, _bloodStatsPanelY;
     static ConfigEntry<float> _noctveilPanelX, _noctveilPanelY;
+    static ConfigEntry<float> _themePanelX, _themePanelY;
     static ConfigEntry<float> _teleportPanelX, _teleportPanelY;
     static ConfigEntry<float> _teleportPopoutX, _teleportPopoutY;
     static ConfigEntry<bool> _teleportPopoutVisible;
@@ -53,6 +57,20 @@ internal static class Settings
 
     public static KeyCode ToggleKey => _toggleKey.Value;
     public static float UIScale => Mathf.Clamp(_uiScale.Value, 0.5f, 2.5f);
+    public static AccentColor AccentColor => _accentColor.Value;
+    public static string CustomAccentColor => _customAccentColor.Value?.Trim() ?? string.Empty;
+
+    /// <summary>The accent colour setting changed (from the Theme window or a config manager).</summary>
+    public static event Action AppearanceChanged;
+
+    /// <summary>Use a palette colour (clears any custom one).</summary>
+    public static void SetAccentColor(AccentColor color)
+    {
+        _customAccentColor.Value = string.Empty;
+        _accentColor.Value = color;
+    }
+
+    public static void SetCustomAccentColor(string hex) => _customAccentColor.Value = hex.Trim();
     public static float PollSeconds => Mathf.Max(2f, _pollSeconds.Value);
     public static int FallbackRespawnSeconds => Math.Max(30, _fallbackRespawnSeconds.Value);
     public static bool LearnRespawnTimes => _learnRespawnTimes.Value;
@@ -155,6 +173,12 @@ internal static class Settings
         set { _noctveilPanelX.Value = Mathf.Round(value.x); _noctveilPanelY.Value = Mathf.Round(value.y); }
     }
 
+    public static Vector2 ThemePanelPosition
+    {
+        get => new(_themePanelX.Value, _themePanelY.Value);
+        set { _themePanelX.Value = Mathf.Round(value.x); _themePanelY.Value = Mathf.Round(value.y); }
+    }
+
     public static Vector2 DpsPanelPosition
     {
         get => new(_dpsPanelX.Value, _dpsPanelY.Value);
@@ -178,6 +202,14 @@ internal static class Settings
             "Optional hotkey that opens/closes the V Blood list (e.g. F8). None = use the on-screen button only. Avoid keys you type in chat.");
         _uiScale = config.Bind("General", "UIScale", 1f,
             "Scale of the hunt tracker and V Blood list (0.5 - 2.5).");
+        _accentColor = config.Bind("Appearance", "AccentColor", AccentColor.Crimson,
+            "The mod's main colour: buttons that are switched on, title bars, window borders and highlights are all shades of it. " +
+            "Pick it in game under Settings -> Theme on the control bar.");
+        _customAccentColor = config.Bind("Appearance", "CustomAccentColor", "",
+            "Use your own main colour instead of one from AccentColor, as a hex code like #3A7BD5. Empty = use AccentColor. " +
+            "Mid-dark colours work best: the button text is light.");
+        _accentColor.SettingChanged += (_, _) => AppearanceChanged?.Invoke();
+        _customAccentColor.SettingChanged += (_, _) => AppearanceChanged?.Invoke();
         _pollSeconds = config.Bind("Tracking", "PollSeconds", 5f,
             "How often (seconds, min 2) to ask the server which V Bloods are alive. This is the same request the game's V Blood menu makes.");
         _fallbackRespawnSeconds = config.Bind("Tracking", "FallbackRespawnSeconds", 600,
@@ -232,7 +264,7 @@ internal static class Settings
             "Only auto-accept requests from these players (comma-separated character names). Empty = anyone who requests.");
         _alarmEnabled = config.Bind("BossAlarm", "Enabled", false,
             "Sound an alarm and show a teleport button at each time in BepInEx/config/DragUI/boss-schedule.txt. " +
-            "Only runs on a server with Noctveil in its name: the default schedule is its Apex/Prime bosses. Toggle it in Server Settings -> Noctveil on the control bar.");
+            "Only runs on a server with Noctveil in its name: the default schedule is its Apex/Prime bosses. Toggle it in Settings -> Noctveil on the control bar.");
         _alarmVolume = config.Bind("BossAlarm", "Volume", 0.35f,
             "Alarm chime volume, 0 - 1 (0 = silent). Played through Windows, so the game's volume sliders don't affect it.");
         _alarmLeadMinutes = config.Bind("BossAlarm", "LeadMinutes", 2f,
@@ -278,6 +310,8 @@ internal static class Settings
             "Whether the teleport pop-out (quick teleport buttons) is open. Open it with Pop out in the Teleport window.");
         _noctveilPanelX = config.Bind("Layout", "NoctveilPanelX", 320f, "Noctveil server settings window offset from the screen centre (x). Drag its title bar to change.");
         _noctveilPanelY = config.Bind("Layout", "NoctveilPanelY", 40f, "Noctveil server settings window offset from the screen centre (y).");
+        _themePanelX = config.Bind("Layout", "ThemePanelX", 0f, "Theme window offset from the screen centre (x). Drag its title bar to change.");
+        _themePanelY = config.Bind("Layout", "ThemePanelY", 80f, "Theme window offset from the screen centre (y).");
         _dpsPanelX = config.Bind("Layout", "DpsPanelX", -320f, "DPS meter window offset from the screen centre (x). Drag its title bar to change.");
         _dpsPanelY = config.Bind("Layout", "DpsPanelY", 0f, "DPS meter window offset from the screen centre (y).");
         _xpPanelX = config.Bind("Layout", "XpPanelX", 0f, "Experience window offset from the screen centre (x). Drag its title bar to change.");
