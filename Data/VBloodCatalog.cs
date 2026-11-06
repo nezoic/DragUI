@@ -86,4 +86,13 @@ internal static class VBloodCatalog
     public static bool TryGet(PrefabGUID guid, out VBloodInfo info) => _byGuid.TryGetValue(guid.GuidHash, out info);
     public static bool TryGet(int guidHash, out VBloodInfo info) => _byGuid.TryGetValue(guidHash, out info);
     public static bool IsKnown(int guidHash) => _byGuid.ContainsKey(guidHash);
+
+    static readonly HashSet<string> _names = new(All.SelectMany(v => new[] { v.Name, v.PrefabName }), StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Is this unit name a V Blood? Matches the boss's name (what Bloodcraft's familiar list shows, from
+    /// the game's English names), its prefab name, or any name containing "VBlood" (a server falling back to
+    /// prefab names).</summary>
+    public static bool IsVBloodName(string name) =>
+        !string.IsNullOrWhiteSpace(name)
+        && (_names.Contains(name.Trim()) || name.Contains("VBlood", StringComparison.OrdinalIgnoreCase));
 }

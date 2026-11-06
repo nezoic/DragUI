@@ -24,6 +24,7 @@ internal sealed class FamiliarPanel : Window
     const float FooterHeight = 48f;
     const float KeyWidth = 78f;
     const float TabWidth = 84f;
+    const float FilterWidth = 80f;
     const float AllRowHeight = 40f;
     const double ConfirmSeconds = 4;
     const double NoteSeconds = 5;
@@ -32,8 +33,8 @@ internal sealed class FamiliarPanel : Window
         "Binds with Bloodcraft's .fam sb (partial names work, not in combat); summoning the bound familiar again calls/dismisses it (.fam t). " +
         "Hotkeys: click a key button and press a key (Esc or a click elsewhere cancels, Backspace clears). Use keys the game doesn't, e.g. F5-F12, numpad or Ctrl+key.";
     const string AllFooter =
-        "List All reads every box with Bloodcraft's .fam boxes / cb / l (replies hidden) and then selects your box again. " +
-        "Save adds a familiar to the quick summon list. Delete removes it from its box for good (.fam r).";
+        "List All reads every box (.fam boxes / cb / l, replies hidden), then reselects your box. V Bloods shows only V Blood familiars. " +
+        "Save adds one to the quick summon list; Delete removes it from its box for good (.fam r).";
 
     readonly TMP_InputField _input;
     readonly TextMeshProUGUI _bound;
@@ -46,6 +47,9 @@ internal sealed class FamiliarPanel : Window
     readonly TextMeshProUGUI _footer;
     readonly UIFactory.ButtonRef _savedTab;
     readonly UIFactory.ButtonRef _allTab;
+    readonly UIFactory.ButtonRef _vbloodFilter;
+    bool _showingAll;
+    bool _vbloodOnly;
     readonly List<RectTransform> _allRows = new();
     readonly Dictionary<FamiliarCatalog.Familiar, UIFactory.ButtonRef> _deleteButtons = new();
     FamiliarCatalog.Familiar _confirmDelete;
@@ -88,10 +92,13 @@ internal sealed class FamiliarPanel : Window
         _savedTab.Rect.Place(12, SavedY - 3, TabWidth, 22);
         _allTab = UIFactory.CreateButton("ListAll", Root, "List All", 12, ListAll, radius: 6f);
         _allTab.Rect.Place(12 + TabWidth + 6, SavedY - 3, TabWidth, 22);
-        float statusX = 12 + TabWidth * 2 + 18;
+        // Only in List All once every box has been read: shows just the V Blood familiars.
+        _vbloodFilter = UIFactory.CreateButton("VBloodFilter", Root, "V Bloods", 12, ToggleVBloodOnly, radius: 6f);
+        _vbloodFilter.Rect.Place(12 + TabWidth * 2 + 18, SavedY - 3, FilterWidth, 22);
+        _vbloodFilter.Rect.gameObject.SetActive(false);
         _catalogStatus = UIFactory.CreateText("CatalogStatus", Root, string.Empty, 11, Theme.TextDim, TextAlignmentOptions.MidlineRight);
         _catalogStatus.overflowMode = TextOverflowModes.Ellipsis;
-        _catalogStatus.rectTransform.Place(statusX, SavedY - 3, Width - 14 - statusX, 22);
+        PlaceCatalogStatus(filterShown: false);
         UIFactory.CreateDivider(Root, 12, SavedY + 22, Width - 24);
 
         _scroll = UIFactory.CreateScrollView("List", Root);
@@ -112,19 +119,55 @@ internal sealed class FamiliarPanel : Window
         Rebuild();
     }
 
+    /// <summary>The V Blood filter needs every box read (a scan finished and none running).</summary>
+    static bool VBloodFilterAvailable => FamiliarCatalog.Scanned && !FamiliarCatalog.Busy;
+
     void ListAll()
     {
         ShowAll(true);
         FamiliarCatalog.Scan(); // already running: just shows it
     }
 
+    void ToggleVBloodOnly()
+    {
+        _vbloodOnly = !_vbloodOnly;
+        StyleVBloodFilter();
+        RebuildAll();
+        _allScroll.Content.anchoredPosition = Vector2.zero; // back to the top of the shorter/longer list
+    }
+
+    void StyleVBloodFilter() =>
+        _vbloodFilter.SetColors(_vbloodOnly ? Theme.Accent : Theme.Button, _vbloodOnly ? Theme.AccentHover : Theme.ButtonHover);
+
+    /// <summary>Show the filter button only in List All with a finished scan. True if it's shown.</summary>
+    bool UpdateVBloodFilter()
+    {
+        bool shown = _showingAll && VBloodFilterAvailable;
+        if (_vbloodFilter.Rect.gameObject.activeSelf != shown)
+        {
+            _vbloodFilter.Rect.gameObject.SetActive(shown);
+            PlaceCatalogStatus(shown);
+            StyleVBloodFilter();
+        }
+        return shown;
+    }
+
+    // The status sits right of the tabs, or right of the filter while that's shown.
+    void PlaceCatalogStatus(bool filterShown)
+    {
+        float x = 12 + TabWidth * 2 + 18 + (filterShown ? FilterWidth + 8 : 0);
+        _catalogStatus.rectTransform.Place(x, SavedY - 3, Width - 14 - x, 22);
+    }
+
     void ShowAll(bool all)
     {
+        _showingAll = all;
         _scroll.Scroll.gameObject.SetActive(!all);
         _allScroll.Scroll.gameObject.SetActive(all);
         _footer.text = all ? AllFooter : SavedFooter;
         _savedTab.SetColors(all ? Theme.Button : Theme.Accent, all ? Theme.ButtonHover : Theme.AccentHover);
         _allTab.SetColors(all ? Theme.Accent : Theme.Button, all ? Theme.AccentHover : Theme.ButtonHover);
+        UpdateVBloodFilter();
     }
 
     void SummonTyped(string text)
@@ -158,9 +201,12 @@ internal sealed class FamiliarPanel : Window
         _allRows.Clear();
         _deleteButtons.Clear();
 
-        var all = FamiliarCatalog.All;
+        bool filtered = _vbloodOnly && VBloodFilterAvailable;
+        var all = filtered ? FamiliarCatalog.All.Where(f => f.VBlood).ToList() : FamiliarCatalog.All.ToList();
         for (int i = 0; i < all.Count; i++) _allRows.Add(CreateAllRow(all[i], i));
-        _allEmpty.text = FamiliarCatalog.Busy ? "Reading your boxes..." : FamiliarCatalog.Scanned ? "No familiars found." : "Click List All to read every box.";
+        _allEmpty.text = FamiliarCatalog.Busy ? "Reading your boxes..."
+            : filtered ? "No V Blood familiars in your boxes."
+            : FamiliarCatalog.Scanned ? "No familiars found." : "Click List All to read every box.";
         _allEmpty.gameObject.SetActive(all.Count == 0);
         _allScroll.Content.sizeDelta = new Vector2(0f, Math.Max(1, all.Count) * AllRowHeight);
         if (_confirmDelete != null && !_deleteButtons.ContainsKey(_confirmDelete)) _confirmDelete = null;
@@ -338,7 +384,10 @@ internal sealed class FamiliarPanel : Window
         bool noted = _note != null && Time.realtimeSinceStartupAsDouble < _noteUntil;
         _status.text = noted ? _note : FamiliarService.LastStatus;
         _status.color = noted ? Theme.Due : Theme.TextDim;
-        _catalogStatus.text = FamiliarCatalog.Status;
+        bool filterShown = UpdateVBloodFilter();
+        _catalogStatus.text = filterShown && _vbloodOnly
+            ? $"{FamiliarCatalog.All.Count(f => f.VBlood)} V Bloods of {FamiliarCatalog.All.Count}"
+            : FamiliarCatalog.Status;
         _allTab.Label.text = FamiliarCatalog.Busy ? "Listing..." : "List All";
         if (_confirmDelete != null && Time.realtimeSinceStartupAsDouble >= _confirmUntil) SetConfirmDelete(null);
 

@@ -24,6 +24,7 @@ internal static class Theme
     public static readonly Color Text = new(0.92f, 0.90f, 0.88f, 1f);
     public static readonly Color TextDim = new(0.62f, 0.60f, 0.60f, 1f);
     public static readonly Color Alive = new(0.47f, 0.83f, 0.47f, 1f);
+    public static readonly Color Synergy = new(0.47f, 0.83f, 0.47f, 0.9f); // class-synergy stat outline
     public static readonly Color Respawning = new(0.92f, 0.73f, 0.32f, 1f);
     public static readonly Color Due = new(1f, 0.50f, 0.33f, 1f);
     public static readonly Color Unknown = new(0.55f, 0.55f, 0.58f, 1f);

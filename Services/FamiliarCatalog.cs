@@ -25,6 +25,7 @@ internal static class FamiliarCatalog
         public int Level;
         public int Prestige;
         public bool Shiny;
+        public bool VBlood; // by name (Data.VBloodCatalog): the list says nothing else about it
     }
 
     sealed class Step
@@ -213,9 +214,11 @@ internal static class FamiliarCatalog
         Match match;
         if ((match = _listEntry.Match(raw)).Success)
         {
+            string name = _richText.Replace(match.Groups["name"].Value, string.Empty).Trim();
             _listed.Add(new Familiar
             {
-                Name = _richText.Replace(match.Groups["name"].Value, string.Empty).Trim(),
+                Name = name,
+                VBlood = Data.VBloodCatalog.IsVBloodName(name),
                 Box = _listedBox,
                 Number = int.Parse(match.Groups["n"].Value),
                 Level = int.Parse(match.Groups["level"].Value),

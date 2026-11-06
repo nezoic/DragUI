@@ -5,7 +5,8 @@ using DragUI.Services;
 namespace DragUI.UI;
 
 // Pick the Bloodcraft bonus stats for what's equipped: a grid with one tile per stat, lit and numbered once
-// chosen. Reset stats asks first, since the server can charge items for it. The tiles are made once and
+// chosen. Stats your Bloodcraft class has a synergy with (worth the synergy multiplier more) get a green
+// outline, explained by the legend on the heading row. Reset stats asks first, since the server can charge items for it. The tiles are made once and
 // restyled, so nothing is created or destroyed while the window is open.
 internal abstract class StatChoicesPanel : Window
 {
@@ -27,6 +28,7 @@ internal abstract class StatChoicesPanel : Window
     const float FooterY = ButtonsY + ButtonHeight + 6f;
     const float FooterHeight = 44f;
     const float ButtonWidth = 110f;
+    const float LegendX = 200f;
 
     sealed class Tile
     {
@@ -35,9 +37,11 @@ internal abstract class StatChoicesPanel : Window
         public TextMeshProUGUI Value;
         public RectTransform Badge;
         public TextMeshProUGUI BadgeText;
+        public RectTransform Synergy; // green outline, on while the class has a synergy with this stat
     }
 
     readonly StatChoices _choices;
+    readonly bool _weapon;
     readonly string _none;
     readonly TextMeshProUGUI _type;
     readonly TextMeshProUGUI _level;
@@ -45,6 +49,8 @@ internal abstract class StatChoicesPanel : Window
     readonly RectTransform _fill;
     readonly TextMeshProUGUI _barLabel;
     readonly TextMeshProUGUI _heading;
+    readonly TextMeshProUGUI _legend;
+    readonly RectTransform _legendSwatch;
     readonly TextMeshProUGUI _status;
     readonly UIFactory.ButtonRef _reset;
     readonly ConfirmDialog _prompt;
@@ -56,6 +62,7 @@ internal abstract class StatChoicesPanel : Window
         : base(name, parent, title, hint, PanelWidth, FooterY + FooterHeight + 6f)
     {
         _choices = choices;
+        _weapon = choices == StatChoices.Weapon;
         _none = none;
 
         _type = UIFactory.CreateText("Type", Root, none, 18, Theme.Text);
@@ -73,7 +80,13 @@ internal abstract class StatChoicesPanel : Window
 
         _heading = UIFactory.CreateText("Heading", Root, string.Empty, 11, Theme.TextDim);
         _heading.characterSpacing = 3f;
-        _heading.rectTransform.Place(14, HeadingY, Width - 28, 20);
+        _heading.rectTransform.Place(14, HeadingY, LegendX - 14, 20);
+        _legend = UIFactory.CreateText("Legend", Root, string.Empty, 11, Theme.TextDim, TextAlignmentOptions.MidlineRight);
+        _legend.rectTransform.Place(LegendX, HeadingY, Width - 14 - LegendX, 20);
+        _legendSwatch = UIFactory.CreatePanel("LegendSwatch", Root, Theme.Button, raycast: false).Rounded(3f).rectTransform;
+        _legendSwatch.Place(LegendX, HeadingY + 3, 14, 14);
+        UIFactory.AddOutline(_legendSwatch, 3f, Theme.Synergy);
+        _legendSwatch.gameObject.SetActive(false);
         UIFactory.CreateDivider(Root, 12, HeadingY + 21, Width - 24);
 
         float tileWidth = (Width - 24 - TileGap * (Columns - 1)) / Columns;
@@ -123,6 +136,9 @@ internal abstract class StatChoicesPanel : Window
         tile.BadgeText.fontStyle = FontStyles.Bold;
         tile.BadgeText.rectTransform.Fill();
         tile.Badge.gameObject.SetActive(false);
+
+        tile.Synergy = UIFactory.AddOutline(tile.Button.Rect, 8f, Theme.Synergy).rectTransform;
+        tile.Synergy.gameObject.SetActive(false);
         return tile;
     }
 
@@ -167,6 +183,8 @@ internal abstract class StatChoicesPanel : Window
         int count = _choices.Count;
         int limit = _choices.Limit;
         Set(_heading, known ? $"CHOSEN {count} OF {limit}" : "CHOSEN -");
+        ClassSynergies.Request();
+        UpdateLegend();
         foreach (var tile in _tiles) Restyle(tile, known, count >= limit);
 
         string resetStyle = _choices.ResetProblem() == null ? "on" : "off";
@@ -178,9 +196,26 @@ internal abstract class StatChoicesPanel : Window
         Set(_status, _choices.Status);
     }
 
+    void UpdateLegend()
+    {
+        bool hasClass = ClassSynergies.Known && ClassSynergies.ClassName.Length > 0;
+        string text = !ClassSynergies.Known ? string.Empty
+            : !hasClass ? "No class chosen: no synergies"
+            : ClassSynergies.Multiplier.Length > 0 ? $"{ClassSynergies.ClassName} synergy: worth x{ClassSynergies.Multiplier}"
+            : $"{ClassSynergies.ClassName} synergy";
+        if (_legend.text == text && _legendSwatch.gameObject.activeSelf == hasClass) return;
+        _legend.text = text;
+        _legendSwatch.gameObject.SetActive(hasClass);
+        // The swatch sits just left of the right-aligned text.
+        float textWidth = _legend.GetPreferredValues(text).x;
+        _legendSwatch.Place(Mathf.Max(LegendX, Width - 14 - textWidth - 6 - 14), HeadingY + 3, 14, 14);
+    }
+
     void Restyle(Tile tile, bool known, bool full)
     {
         var stat = tile.Stat;
+        bool synergy = ClassSynergies.Known && ClassSynergies.Has(_weapon, stat);
+        if (tile.Synergy.gameObject.activeSelf != synergy) tile.Synergy.gameObject.SetActive(synergy);
         string cap = stat.Cap != null ? $"base cap {stat.Cap}" : string.Empty;
         Set(tile.Value, stat.Slot > 0 && stat.Now != null
             ? stat.Cap != null ? $"+{stat.Now}  ·  {cap}" : $"+{stat.Now}"

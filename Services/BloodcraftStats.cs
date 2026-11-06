@@ -84,6 +84,16 @@ internal static class BloodcraftStats
     /// <summary>Class shift spell: index in the class's spell list (.class csp takes index + 1), -1 = none.</summary>
     public static int ShiftSpell => _shiftSpell;
 
+    /// <summary>True once the config (synergy lists) and the class (progress) have both been seen.</summary>
+    public static bool SynergiesKnown => _weaponCaps != null && _expertise != null;
+
+    /// <summary>Bloodcraft's class synergy multiplier (valid when SynergiesKnown).</summary>
+    public static float SynergyMultiplier => _synergyMult;
+
+    /// <summary>Does the current class have a synergy with weapon (or blood) stat <paramref name="code"/> (1-12)?</summary>
+    public static bool HasSynergy(bool weapon, int code) =>
+        _synergies.TryGetValue(_class, out var synergy) && (weapon ? synergy.Weapon : synergy.Blood)?.Contains(code) == true;
+
     public static string ClassLabel(int classId) =>
         classId >= 1 && classId <= ClassNames.Length ? Regex.Replace(ClassNames[classId - 1], "(?<=[a-z])(?=[A-Z])", " ") : "No class";
 

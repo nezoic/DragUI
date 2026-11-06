@@ -56,6 +56,7 @@ internal static class LifecyclePatches
             LoadoutService.OnWorldTeardown();
             LoadoutStore.OnWorldTeardown();
             StatChoices.OnWorldTeardown();
+            ClassSynergies.OnWorldTeardown();
             ServerData.OnWorldTeardown();
             Core.Reset();
         }

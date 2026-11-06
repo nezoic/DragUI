@@ -43,9 +43,14 @@ internal static class ChatPatch
                         Core.EntityManager.DestroyEntity(entity); // replies to the stat windows' commands
                         continue;
                     }
+                    if (Settings.StatChoicesEnabled && ClassSynergies.OnServerMessage(chat.MessageType, text))
+                    {
+                        Core.EntityManager.DestroyEntity(entity); // the stat windows' .class lst
+                        continue;
+                    }
                     ChatKillFeed.OnServerMessage(chat.MessageType, text, chat.TimeUTC);
                     if (Settings.FamiliarsEnabled) FamiliarService.OnServerMessage(chat.MessageType, text);
-                    if (Settings.SheetEnabled || Settings.LoadoutsEnabled) BloodcraftStats.OnServerMessage(chat.MessageType, text);
+                    if (Settings.SheetEnabled || Settings.LoadoutsEnabled || Settings.StatChoicesEnabled) BloodcraftStats.OnServerMessage(chat.MessageType, text);
                     AutoTeleport.OnServerMessage(chat.MessageType, text);
                     if (Settings.SheetEnabled && PerkshopStats.OnServerMessage(chat.MessageType, text))
                     {
